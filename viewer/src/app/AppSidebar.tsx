@@ -137,8 +137,9 @@ export function AppSidebar({ report, page, switcher, search }: AppSidebarProps) 
       {/* Folded to its icons, the rail keeps one rhythm: the same step between every button,
           and a hairline where a group's name would be. */}
       <SidebarHeader className="gap-3 group-data-[collapsible=icon]:gap-1">
-        {/* Collapsed, the mark sits in a square like the page buttons below it, centred and at their icons' size. */}
-        <div className="flex h-8 items-center px-2 group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:[&_svg]:h-auto group-data-[collapsible=icon]:[&_svg]:w-5">
+        {/* Collapsed, the mark sits in a square like the page buttons below it, centred and at their icons' size,
+            with room under it so it reads as the mark and not as the first button. */}
+        <div className="flex h-8 items-center px-2 group-data-[collapsible=icon]:mb-3 group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:[&_svg]:h-auto group-data-[collapsible=icon]:[&_svg]:w-5">
           <Logo size={22} withName={false} />
           <span className="ml-2 text-base font-semibold tracking-tight group-data-[collapsible=icon]:hidden">
             complydoc
