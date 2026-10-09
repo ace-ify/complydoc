@@ -82,12 +82,13 @@ API = "api"
 
 CONFIG_ELEMENT = "complydoc-local"
 
-_KEPT = ("ignores", "concepts", "categories")
+_KEPT = ("ignores", "concepts", "categories", "evals")
 """The files beside the documents that the viewer may read and change."""
 
 _IGNORE_FIELDS = ("finding", "reason", "what", "paths", "until")
 _CONCEPT_FIELDS = ("id", "label", "description", "pattern", "severity", "judge")
 _CATEGORY_FIELDS = ("enabled", "severity")
+_EVAL_FIELDS = ("text", "document")
 """What the viewer may set; who made a change, and when, is the server's to say."""
 """The id of the script element that tells the viewer where to find the reports."""
 
@@ -262,9 +263,11 @@ def _file_for(report_path: Path, kind: str) -> Path | None:
     """
     from complydoc.categories import CATEGORIES_FILENAME, CategoryError, load_categories
     from complydoc.concepts import CONCEPTS_FILENAME, ConceptError, load_concepts
+    from complydoc.evals import EVALS_FILENAME, EvalError, load_evals
     from complydoc.ignores import IGNORE_FILENAME, IgnoreError, load_ignores
 
     filename, load, error = {
+        "evals": (EVALS_FILENAME, load_evals, EvalError),
         "ignores": (IGNORE_FILENAME, load_ignores, IgnoreError),
         "concepts": (CONCEPTS_FILENAME, load_concepts, ConceptError),
         "categories": (CATEGORIES_FILENAME, load_categories, CategoryError),
@@ -460,6 +463,12 @@ class _Handler(BaseHTTPRequestHandler):
                 },
             )
             return
+        if kind == "evals":
+            from complydoc.evals import load_evals
+
+            facts = [fact.model_dump(mode="json") for fact in load_evals(file).facts]
+            self._json(HTTPStatus.OK, {"file": str(file), "facts": facts})
+            return
         if kind == "ignores":
             entries = [entry.model_dump(mode="json") for entry in load_ignores(file).ignores]
         else:
@@ -494,7 +503,17 @@ class _Handler(BaseHTTPRequestHandler):
             if not isinstance(body, dict):
                 raise ValueError("expected an object")
             given = {key: value for key, value in body.items() if value not in (None, "")}
-            if kind == "ignores" and self.command == "DELETE":
+            if kind == "evals":
+                from complydoc.evals import ExpectedFact, add_fact, remove_fact
+
+                fact = ExpectedFact.model_validate(
+                    {key: given[key] for key in _EVAL_FIELDS if key in given}
+                )
+                if self.command == "DELETE":
+                    remove_fact(file, fact.text, fact.document)
+                else:
+                    add_fact(file, fact)
+            elif kind == "ignores" and self.command == "DELETE":
                 remove_ignore(file, str(body.get("finding", "")))
             elif kind == "ignores":
                 add_ignore(

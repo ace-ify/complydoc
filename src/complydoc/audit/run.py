@@ -81,6 +81,7 @@ from complydoc.report.models import (
     ConceptRule,
     ConceptSummary,
     DocumentReport,
+    EvalSummary,
     RunMetadata,
     build_aggregate,
 )
@@ -419,7 +420,7 @@ def run_audit(
         verify_scope=verify_scope if verify_name is not None else None,
     )
 
-    return assemble_report(
+    report = assemble_report(
         config,
         requested,
         documents,
@@ -433,6 +434,30 @@ def run_audit(
         judge_name=(
             None if not judging else judge_spec or getattr(judge_concepts, "__name__", "your own")
         ),
+    )
+    report.evals = _evals(Path(target), report, extracted_text)
+    return report
+
+
+def _evals(target: Path, report: AuditReport, extracted_text: bool) -> EvalSummary | None:
+    """What the folder's evals file expects, checked against this run's own reading.
+
+    None without the file. With it but without the text kept, the file is named and
+    nothing is checked, since there is nothing to check it against.
+    """
+    from complydoc.evals import find_evals_file, load_evals
+    from complydoc.extraction.facts import evaluate_facts
+
+    file = find_evals_file(target)
+    if file is None:
+        return None
+    reader = report.run.extractor
+    if not extracted_text:
+        return EvalSummary(str(file), [reader], [])
+    return EvalSummary(
+        str(file),
+        [reader],
+        evaluate_facts({reader: report.documents}, load_evals(file).as_facts()),
     )
 
 

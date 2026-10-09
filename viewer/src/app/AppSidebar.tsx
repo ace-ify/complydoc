@@ -40,7 +40,7 @@ interface AppSidebarProps {
 const GROUPS: { label: string; pages: Page[] }[] = [
   { label: "Overview", pages: ["home", "pipeline"] },
   { label: "Findings", pages: ["security", "documents"] },
-  { label: "Ingestion", pages: ["chunks", "cost"] },
+  { label: "Ingestion", pages: ["evals", "chunks", "cost"] },
 ];
 
 const FOLDED_KEY = "complydoc-sidebar-missing-open";

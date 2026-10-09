@@ -13,6 +13,7 @@ import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/s
 import { ChunksPage } from "@/features/chunks/ChunksPage";
 import { CostPage } from "@/features/cost/CostPage";
 import { DocumentsPage } from "@/features/documents/DocumentsPage";
+import { EvalsPage } from "@/features/evals/EvalsPage";
 import { PipelinePage } from "@/features/pipeline/PipelinePage";
 import { ReviewQueue } from "@/features/security/ReviewQueue";
 import { SecurityPage } from "@/features/security/SecurityPage";
@@ -248,6 +249,7 @@ export function ReportView({
                     {page === "cost" && <CostPage report={report} />}
                     {page === "documents" && <DocumentsPage report={report} open={detail} />}
                     {page === "chunks" && <ChunksPage report={report} />}
+                    {page === "evals" && <EvalsPage report={report} {...(run.source ? { source: run.source } : {})} />}
                     {page === "settings" && (
                       <SettingsPage report={report} {...(run.source ? { source: run.source } : {})} />
                     )}
