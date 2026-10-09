@@ -526,7 +526,30 @@ class _Handler(BaseHTTPRequestHandler):
             return
         self._listing(kind, file)
 
+    def _find(self) -> None:
+        """Where a value went, across every report served. It changes no file, so a
+        read-only viewer answers it too; like a write, it must come from the viewer's page."""
+        from complydoc.ledger import find_value
+
+        if not self._local_host() or not self._same_origin():
+            self._error(HTTPStatus.FORBIDDEN, "only the viewer's own page can ask this")
+            return
+        try:
+            length = min(int(self.headers.get("Content-Length") or 0), 4_000)
+            body = json.loads(self.rfile.read(length) or b"{}")
+            value = body.get("value") if isinstance(body, dict) else None
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError("give the value to find")
+        except ValueError as exc:
+            self._error(HTTPStatus.BAD_REQUEST, str(exc))
+            return
+        self.server.refresh()
+        self._json(HTTPStatus.OK, find_value(value, *self.server.sources).to_dict())
+
     def do_POST(self) -> None:
+        if unquote(urlsplit(self.path).path) == f"/{API}/find":
+            self._find()
+            return
         self._write()
 
     def do_DELETE(self) -> None:
