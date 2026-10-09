@@ -1,6 +1,9 @@
+import { PlayIcon } from "lucide-react";
 import { NotInRun } from "@/components/NotInRun";
 import { Section, SectionStack } from "@/components/Section";
+import { Button } from "@/components/ui/button";
 import { useEvalsState } from "@/hooks/useEvals";
+import { toast } from "@/lib/toast";
 import { factsToShow } from "@/report/evals";
 import { fileName, plural } from "@/report/format";
 import type { Report } from "@/report/types";
@@ -16,11 +19,17 @@ import { Scoreboard } from "./Scoreboard";
  */
 export function EvalsPage({ report }: { report: Report }) {
   const state = useEvalsState();
-  const evals = report.evals ?? null;
+  // The facts as they are now, run against this run's text, once that has been done; else
+  // what the run itself checked when it was made.
+  const evals = state.scored ?? report.evals ?? null;
   const facts = factsToShow(state.facts, evals);
   const scored = (evals?.checks.length ?? 0) > 0;
 
   if (!scored && !state.editable && facts.length === 0) return <NotInRun report={report} content="evals" />;
+
+  const runNow = async () => {
+    if (await state.run()) toast("Checked against this run's text");
+  };
 
   return (
     <SectionStack>
@@ -34,7 +43,17 @@ export function EvalsPage({ report }: { report: Report }) {
       )}
       <Section
         title="Expected facts"
-        aside={(state.file ?? evals?.file) ? fileName(state.file ?? evals?.file ?? "") : "No evals file yet"}
+        aside={
+          <span className="flex items-center gap-3">
+            {(state.file ?? evals?.file) ? fileName(state.file ?? evals?.file ?? "") : "No evals file yet"}
+            {state.facts !== null && facts.length > 0 && (
+              <Button variant="outline" size="sm" disabled={state.running} onClick={() => void runNow()}>
+                <PlayIcon />
+                {state.running ? "Running…" : "Run evals"}
+              </Button>
+            )}
+          </span>
+        }
       >
         {facts.length > 0 ? (
           <FactList
@@ -44,8 +63,8 @@ export function EvalsPage({ report }: { report: Report }) {
           />
         ) : (
           <p className="text-sm text-muted-foreground">
-            Nothing is expected yet. Add a passage one of these documents must come out with, then run the audit or the
-            loader comparison again to see which readings keep it.
+            Nothing is expected yet. Add a passage one of these documents must come out with, here or by selecting it in
+            a document, and it is checked against every reading this run holds.
           </p>
         )}
         {state.editable && (

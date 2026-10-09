@@ -49,10 +49,15 @@ describe("EvalsPage", () => {
     expect(screen.getByText("No evals in this run")).toBeInTheDocument();
   });
 
-  it("adds a passage to the folder's file through complydoc ui", async () => {
-    const listing = { file: "/work/contracts/.complydoc-evals.yaml", facts: [] as object[] };
-    const fetch = vi.fn(async (_url: string, init?: RequestInit) => {
-      if (init?.method === "POST") listing.facts = [JSON.parse(String(init.body))];
+  it("adds a passage through complydoc ui and runs it against the run's text at once", async () => {
+    const file = "/work/contracts/.complydoc-evals.yaml";
+    const listing = { file, facts: [] as { text: string }[] };
+    const fetch = vi.fn(async (url: string, init?: RequestInit) => {
+      if (init?.method === "POST") listing.facts = [JSON.parse(String(init.body)) as { text: string }];
+      if (url.endsWith("/score")) {
+        const checks = listing.facts.map((fact) => ({ fact: fact.text, found: { pdfplumber: "exact" }, scores: {} }));
+        return new Response(JSON.stringify({ file, readers: ["pdfplumber"], checks }));
+      }
       return new Response(JSON.stringify(listing));
     });
     vi.stubGlobal("fetch", fetch);
@@ -70,6 +75,15 @@ describe("EvalsPage", () => {
       expect(fetch).toHaveBeenCalledWith("api/reports/a/evals", expect.objectContaining({ method: "POST" })),
     );
     expect(await screen.findByText("Total due 5,100.00")).toBeInTheDocument();
-    expect(screen.getByText(/not checked yet/)).toBeInTheDocument();
+    // Scored without being asked: the scoreboard is there, and nothing says to run it again.
+    const board = within(await screen.findByRole("region", { name: "Scoreboard" }));
+    expect(board.getByText("1 of 1")).toBeInTheDocument();
+    expect(screen.queryByText(/not checked yet/)).not.toBeInTheDocument();
+
+    const before = fetch.mock.calls.filter(([url]) => String(url).endsWith("/score")).length;
+    await userEvent.click(screen.getByRole("button", { name: "Run evals" }));
+    await waitFor(() =>
+      expect(fetch.mock.calls.filter(([url]) => String(url).endsWith("/score")).length).toBe(before + 1),
+    );
   });
 });

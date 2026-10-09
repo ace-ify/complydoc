@@ -203,3 +203,56 @@ def test_the_viewer_lists_adds_and_removes_the_folders_facts(folder: Path, tmp_p
         assert status == 200 and json.loads(body)["facts"] == []
     finally:
         viewer.stop()
+
+
+def test_a_run_is_scored_again_from_the_text_it_kept(folder: Path, tmp_path: Path):
+    """A passage added after a run is checked against the readings the run holds: nothing
+    is read again, and every loader the run compared is scored."""
+    from complydoc.evals import score_report
+
+    file = folder / EVALS_FILENAME
+    add_fact(file, ExpectedFact(text=LOST))
+    report = cd.compare_loaders({"whole": Whole, "drops": DropsAClause}, paths=folder)
+    out = tmp_path / "loaders.json"
+    cd.write_json(report, out, detail="full")
+
+    add_fact(file, ExpectedFact(text=KEPT, document="terms.pdf"))
+    add_fact(file, ExpectedFact(text=NOWHERE))
+    (folder / "terms.pdf").unlink()  # the documents are not needed again
+    scored = score_report(load_report(out), file)
+
+    assert scored.readers == ["whole", "drops"]
+    lost, kept, nowhere = scored.checks
+    assert (lost.found["whole"], lost.found["drops"] == "exact") == ("exact", False)
+    assert kept.found == {"whole": "exact", "drops": "exact"}
+    assert nowhere.found == {"whole": None, "drops": None}
+    # The same answer the run itself gave for the fact it had.
+    assert report.evals is not None and lost.found == report.evals.checks[0].found
+
+
+def test_the_viewer_runs_the_facts_against_a_run_on_request(folder: Path, tmp_path: Path):
+    add_fact(folder / EVALS_FILENAME, ExpectedFact(text="Terms and conditions"))
+    out = tmp_path / "out"
+    assert (
+        runner.invoke(app, ["audit", str(folder), "--out", str(out), "--no-ocr", "-q"]).exit_code
+        == 0
+    )
+    offline.disarm()
+    dist = tmp_path / "dist"
+    dist.mkdir()
+    (dist / "index.html").write_text("<html><head></head><body></body></html>")
+    viewer = launch_ui(out, port=0, open_browser=False, dist=dist, read_only=True)
+    try:
+        (report,) = viewer.reports()
+        add_fact(folder / EVALS_FILENAME, ExpectedFact(text="Neither party is liable"))
+        status, body = send(viewer.port, "GET", f"/api/reports/{report.id}/evals/score")
+        assert status == 200, body
+        scored = json.loads(body)
+        (reader,) = scored["readers"]
+        assert [(c["fact"], c["found"][reader]) for c in scored["checks"]] == [
+            ("Terms and conditions", "exact"),
+            ("Neither party is liable", "exact"),
+        ]
+        assert send(viewer.port, "GET", "/api/reports/nope/evals/score")[0] == 404
+    finally:
+        viewer.stop()

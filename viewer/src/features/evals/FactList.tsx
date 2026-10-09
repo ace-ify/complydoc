@@ -61,7 +61,7 @@ export function FactList({ facts, evals, onRemove }: FactListProps) {
               <p className="text-sm font-medium">{fact.text}</p>
               <p className="text-xs text-muted-foreground">
                 {fact.document ? fileName(fact.document) : "Any document"}
-                {!check && " · not checked yet: run it again"}
+                {!check && " · not checked yet"}
               </p>
               {check && evals && <Readings check={check} readers={evals.readers} />}
             </div>

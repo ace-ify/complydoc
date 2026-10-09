@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useState } from "rea
 import { servedReadOnly } from "@/hooks/useLocalReports";
 import { toast } from "@/lib/toast";
 import type { ExpectedFact } from "@/report/evals";
+import type { EvalSummary } from "@/report/types";
 
 export interface EvalsState {
   /** Whether facts can be added here: served by `complydoc ui`, with the folder on this machine. */
@@ -10,6 +11,14 @@ export interface EvalsState {
   /** What the file holds now; null when it cannot be read from here. */
   facts: ExpectedFact[] | null;
   error: string | null;
+  /**
+   * The file's facts checked against the text this run kept, as of the last time they were
+   * run; null before the first, and where there is no `complydoc ui` to run them.
+   */
+  scored: EvalSummary | null;
+  running: boolean;
+  /** Check the facts as they are now. Nothing is read again: the run's own text is used. */
+  run: () => Promise<boolean>;
   add: (fact: ExpectedFact) => Promise<boolean>;
   remove: (fact: ExpectedFact) => Promise<boolean>;
 }
@@ -24,6 +33,9 @@ const READ_ONLY: EvalsState = {
   file: null,
   facts: null,
   error: null,
+  scored: null,
+  running: false,
+  run: async () => false,
   add: async () => false,
   remove: async () => false,
 };
@@ -43,16 +55,43 @@ export function useEvalsState(): EvalsState {
 export function useEvals(source?: string): EvalsState {
   const [listing, setListing] = useState<Listing | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [scored, setScored] = useState<EvalSummary | null>(null);
+  const [running, setRunning] = useState(false);
   const url = source ? `${source}/evals` : null;
+
+  const run = useCallback(async () => {
+    if (!url) return false;
+    setRunning(true);
+    try {
+      const response = await fetch(`${url}/score`);
+      if (!response.ok) {
+        setError(await response.text());
+        return false;
+      }
+      setScored((await response.json()) as EvalSummary);
+      setError(null);
+      return true;
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "complydoc ui could not be reached.");
+      return false;
+    } finally {
+      setRunning(false);
+    }
+  }, [url]);
 
   useEffect(() => {
     if (!url) return;
     const abort = new AbortController();
     fetch(url, { signal: abort.signal })
-      .then(async (response) => (response.ok ? setListing((await response.json()) as Listing) : setListing(null)))
+      .then(async (response) => {
+        if (!response.ok) return setListing(null);
+        setListing((await response.json()) as Listing);
+        // With a file to read, the facts in it are run at once: the page opens on scores as they are.
+        void run();
+      })
       .catch(() => undefined);
     return () => abort.abort();
-  }, [url]);
+  }, [url, run]);
 
   const write = useCallback(
     async (method: "POST" | "DELETE", fact: ExpectedFact) => {
@@ -83,14 +122,23 @@ export function useEvals(source?: string): EvalsState {
     file: listing?.file ?? null,
     facts: listing?.facts ?? null,
     error,
+    scored,
+    running,
+    run,
     add: async (fact) => {
       const done = await write("POST", fact);
-      if (done) toast("Expected: the next run checks it");
+      if (done) {
+        toast("Expected, and checked against this run");
+        void run();
+      }
       return done;
     },
     remove: async (fact) => {
       const done = await write("DELETE", fact);
-      if (done) toast("No longer expected");
+      if (done) {
+        toast("No longer expected");
+        void run();
+      }
       return done;
     },
   };

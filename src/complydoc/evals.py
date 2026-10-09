@@ -22,12 +22,17 @@ broken at a line end do not matter, and a near miss is scored and shown.
 
 from __future__ import annotations
 
+import dataclasses
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from complydoc.extraction.facts import Fact
+
+if TYPE_CHECKING:
+    from complydoc.report.models import AuditReport, DocumentReport, EvalSummary
 
 __all__ = [
     "EVALS_FILENAME",
@@ -38,6 +43,7 @@ __all__ = [
     "find_evals_file",
     "load_evals",
     "remove_fact",
+    "score_report",
 ]
 
 EVALS_FILENAME = ".complydoc-evals.yaml"
@@ -147,3 +153,47 @@ def remove_fact(path: Path, text: str, document: str | None = None) -> bool:
         return False
     _write(path, kept)
     return True
+
+
+def _readers(report: AuditReport) -> list[str]:
+    """Whose readings a run holds: each loader it compared, or the one reader of an audit."""
+    if report.loader_comparison is not None:
+        return [row.name for row in report.loader_comparison.loaders]
+    return [report.run.extractor]
+
+
+def _as_read_by(document: DocumentReport, reader: str, only: bool) -> DocumentReport:
+    """`document` with each page's text as `reader` read it, from what the run kept."""
+    pages = [
+        dataclasses.replace(
+            page,
+            text=page.text
+            if only or page.kept == reader or (not page.kept and reader not in page.readings)
+            else page.readings.get(reader, ""),
+        )
+        for page in document.extracted_text
+    ]
+    return dataclasses.replace(document, extracted_text=pages)
+
+
+def score_report(report: AuditReport, file: Path) -> EvalSummary:
+    """The facts in `file` now, checked against the readings `report` already holds.
+
+    Nothing is read again: a run keeps the text each reader produced, and that is what a
+    fact is looked for in. So a passage added since the run is scored at once, for every
+    reader the run compared. The text kept is the masked text unless the run revealed its
+    values, so a passage that holds an identifier is not found in it.
+    """
+    from complydoc.extraction.facts import evaluate_facts
+    from complydoc.report.models import EvalSummary
+
+    if any(d.page_count and not d.extracted_text for d in report.documents):
+        raise EvalError(
+            "This run kept no text to check against. Run it with the extracted text kept."
+        )
+    readers = _readers(report)
+    readings = {
+        reader: [_as_read_by(d, reader, len(readers) == 1) for d in report.documents]
+        for reader in readers
+    }
+    return EvalSummary(str(file), readers, evaluate_facts(readings, load_evals(file).as_facts()))

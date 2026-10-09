@@ -545,6 +545,29 @@ class _Handler(BaseHTTPRequestHandler):
             return
         self._listing(kind, file)
 
+    def _score(self, path: str) -> None:
+        """The folder's facts as they are now, checked against the text this run kept.
+
+        Nothing is read again and nothing is written, so a read-only viewer answers it.
+        """
+        import dataclasses
+
+        from complydoc.evals import EvalError, score_report
+        from complydoc.report.json_reader import load_report
+
+        wanted = path.removeprefix(f"/{API}/reports/").partition("/")[0]
+        report = next((r for r in find_reports(*self.server.sources) if r.id == wanted), None)
+        found = self._kept_file(path)
+        if report is None or found is None:
+            self._error(HTTPStatus.NOT_FOUND, "no such report, or its folder is gone")
+            return
+        try:
+            scored = score_report(load_report(report.path), found[1])
+        except (EvalError, ValueError, OSError) as exc:
+            self._error(HTTPStatus.CONFLICT, str(exc))
+            return
+        self._json(HTTPStatus.OK, dataclasses.asdict(scored))
+
     def _find(self) -> None:
         """Where a value went, across every report served. It changes no file, so a
         read-only viewer answers it too; like a write, it must come from the viewer's page."""
@@ -606,6 +629,8 @@ class _Handler(BaseHTTPRequestHandler):
             reports = [report.to_dict() for report in find_reports(*server.sources)]
             body = json.dumps({"reports": reports, "sources": server.source_names}).encode("utf-8")
             self._send(HTTPStatus.OK, body, "application/json")
+        elif path.startswith(f"/{API}/reports/") and path.endswith("/evals/score"):
+            self._score(path.removesuffix("/score"))
         elif path.startswith(f"/{API}/reports/") and path.endswith(tuple(f"/{k}" for k in _KEPT)):
             found = self._kept_file(path)
             if found is None:
