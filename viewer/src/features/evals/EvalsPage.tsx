@@ -1,6 +1,6 @@
 import { NotInRun } from "@/components/NotInRun";
 import { Section, SectionStack } from "@/components/Section";
-import { useEvals } from "@/hooks/useEvals";
+import { useEvalsState } from "@/hooks/useEvals";
 import { factsToShow } from "@/report/evals";
 import { fileName, plural } from "@/report/format";
 import type { Report } from "@/report/types";
@@ -14,8 +14,8 @@ import { Scoreboard } from "./Scoreboard";
  * side by side. The passages are kept in a file beside the documents, which `complydoc ui`
  * can add to. A prototype.
  */
-export function EvalsPage({ report, source }: { report: Report; source?: string }) {
-  const state = useEvals(source);
+export function EvalsPage({ report }: { report: Report }) {
+  const state = useEvalsState();
   const evals = report.evals ?? null;
   const facts = factsToShow(state.facts, evals);
   const scored = (evals?.checks.length ?? 0) > 0;

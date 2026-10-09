@@ -25,6 +25,7 @@ import { ModeToggle } from "@/components/ModeToggle";
 import { PlanBar } from "@/components/PlanBar";
 import { ReadOnlyBadge } from "@/components/ReadOnlyBadge";
 import { PlanProvider } from "@/components/PlanProvider";
+import { EvalsProvider } from "@/components/EvalsProvider";
 import { IgnoreProvider } from "@/components/IgnoreProvider";
 import { GoTo } from "@/components/GoTo";
 import { Hint } from "@/components/Hint";
@@ -237,25 +238,27 @@ export function ReportView({
               {/* Keyed by page and run, so moving on from a page that failed shows the next one. */}
               <PageErrorBoundary key={`${run.id}:${page}:${detail ?? ""}`}>
                 <IgnoreProvider report={report} {...(run.source ? { source: run.source } : {})}>
-                  {/* Remounted with the page by the boundary's key, so each page fades in. */}
-                  <div className="animate-page-in">
-                    {page === "home" && <HomePage report={report} />}
-                    {page === "pipeline" && <PipelinePage report={report} />}
-                    {page === "security" &&
-                      (detail?.startsWith("review") ? (
-                        <ReviewQueue report={report} at={Number(detail.split("/")[1] ?? 0) || 0} />
-                      ) : (
-                        <SecurityPage report={report} />
-                      ))}
-                    {page === "cost" && <CostPage report={report} />}
-                    {page === "documents" && <DocumentsPage report={report} open={detail} />}
-                    {page === "chunks" && <ChunksPage report={report} />}
-                    {page === "find" && <FindPage />}
-                    {page === "evals" && <EvalsPage report={report} {...(run.source ? { source: run.source } : {})} />}
-                    {page === "settings" && (
-                      <SettingsPage report={report} {...(run.source ? { source: run.source } : {})} />
-                    )}
-                  </div>
+                  <EvalsProvider {...(run.source ? { source: run.source } : {})}>
+                    {/* Remounted with the page by the boundary's key, so each page fades in. */}
+                    <div className="animate-page-in">
+                      {page === "home" && <HomePage report={report} />}
+                      {page === "pipeline" && <PipelinePage report={report} />}
+                      {page === "security" &&
+                        (detail?.startsWith("review") ? (
+                          <ReviewQueue report={report} at={Number(detail.split("/")[1] ?? 0) || 0} />
+                        ) : (
+                          <SecurityPage report={report} />
+                        ))}
+                      {page === "cost" && <CostPage report={report} />}
+                      {page === "documents" && <DocumentsPage report={report} open={detail} />}
+                      {page === "chunks" && <ChunksPage report={report} />}
+                      {page === "find" && <FindPage />}
+                      {page === "evals" && <EvalsPage report={report} />}
+                      {page === "settings" && (
+                        <SettingsPage report={report} {...(run.source ? { source: run.source } : {})} />
+                      )}
+                    </div>
+                  </EvalsProvider>
                 </IgnoreProvider>
               </PageErrorBoundary>
             </main>

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { servedReadOnly } from "@/hooks/useLocalReports";
 import { toast } from "@/lib/toast";
 import type { ExpectedFact } from "@/report/evals";
@@ -17,6 +17,22 @@ export interface EvalsState {
 interface Listing {
   file: string;
   facts: ExpectedFact[];
+}
+
+const READ_ONLY: EvalsState = {
+  editable: false,
+  file: null,
+  facts: null,
+  error: null,
+  add: async () => false,
+  remove: async () => false,
+};
+
+/** The run's evals file, shared by the Evals page and the document view that adds to it. */
+export const EvalsContext = createContext<EvalsState>(READ_ONLY);
+
+export function useEvalsState(): EvalsState {
+  return useContext(EvalsContext);
 }
 
 /**

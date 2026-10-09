@@ -1,5 +1,6 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { EvalsProvider } from "@/components/EvalsProvider";
 import { renderPage } from "@/test/render";
 import { sampleAudit } from "@/test/sample";
 import type { EvalSummary, Report } from "@/report/types";
@@ -55,7 +56,11 @@ describe("EvalsPage", () => {
       return new Response(JSON.stringify(listing));
     });
     vi.stubGlobal("fetch", fetch);
-    renderPage(<EvalsPage report={withEvals(null)} source="api/reports/a" />);
+    renderPage(
+      <EvalsProvider source="api/reports/a">
+        <EvalsPage report={withEvals(null)} />
+      </EvalsProvider>,
+    );
 
     const box = await screen.findByLabelText("A passage a reading must contain");
     await userEvent.type(box, "Total due 5,100.00");
