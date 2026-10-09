@@ -68,8 +68,14 @@ def find(
             pages = ", ".join(map(str, document.pages))
             where = f"page {pages}" if len(document.pages) == 1 else f"pages {pages}"
             console.print(f"  [dim]in[/]       {escape(document.path)}  [dim]{where}[/]")
-        if run.stages:
-            path = " → ".join(dict.fromkeys(stage.component for stage in run.stages))
-            console.print(f"  [dim]through[/]  {escape(path)}", soft_wrap=True)
+        for step in run.steps:
+            if step.held:
+                sent = f"  [yellow]→ {escape(', '.join(step.hosts))}[/]" if step.hosts else ""
+                console.print(
+                    f"  [dim]{step.step:>2}[/]  {escape(step.component)}  "
+                    f"[dim]{step.kind}, {count(step.occurrences, 'time')}[/]{sent}"
+                )
+            else:
+                console.print(f"  [dim]{step.step:>2}  {escape(step.component)}  not there[/]")
         if run.sent_to:
             console.print(f"  [yellow]sent to[/]  {escape(', '.join(run.sent_to))}")

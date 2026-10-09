@@ -139,20 +139,57 @@ def test_the_trail_says_which_pages_which_steps_and_which_hosts(reports: Path):
     assert audit.kind == "audit" and audit.name == "/work/contracts"
     (document,) = audit.documents
     assert (document.path, document.pages, document.occurrences) == ("msa.pdf", [3, 7], 2)
-    assert audit.stages == [] and audit.sent_to == []
+    assert audit.steps == [] and audit.reached is None and audit.sent_to == []
 
     assert sent.kind == "pipeline" and sent.name == "contracts-ingest"
     assert sent.commit == "a" * 40
-    assert [(s.step, s.component, s.occurrences) for s in sent.stages] == [
+    assert [(s.step, s.component, s.occurrences) for s in sent.steps] == [
         (1, "PyPDFLoader", 1),
         (2, "RecursiveCharacterTextSplitter", 2),
         (3, "OpenAIEmbeddings", 2),
     ]
+    assert sent.reached == 3
     assert sent.sent_to == ["api.openai.com"]
 
-    # Masked before the splitter: the value went no further than the loader, and nowhere else.
-    assert [s.component for s in masked.stages] == ["PyPDFLoader"]
+    # Masked before the splitter: every step is listed, and the value is in the first only.
+    # The embedding step still sent to its host, but not this value.
+    assert [(s.component, s.held) for s in masked.steps] == [
+        ("PyPDFLoader", True),
+        ("Mask", False),
+        ("OpenAIEmbeddings", False),
+    ]
+    assert masked.reached == 1
     assert masked.sent_to == []
+
+
+def test_calls_one_after_another_of_one_component_are_one_step(tmp_path: Path):
+    """As the trace shows them: a loader called once a file is one step of several calls."""
+    load = {"kind": "load", "component": "PyPDFLoader", "method": "load", "hosts": []}
+    write(
+        tmp_path / "ingest.json",
+        {
+            "run": {"schema_version": 23, "target": "x", "started_at": "2026-10-02T09:00:00"},
+            "documents": [],
+            "trace": {
+                "kind": "pipeline",
+                "name": "ingest",
+                "stages": [
+                    {**load, "identifiers": [identifier(FINGERPRINT)]},
+                    {**load, "identifiers": []},
+                    {**load, "identifiers": [identifier(FINGERPRINT, occurrences=2)]},
+                    # A call made inside another is part of its step, not one of its own.
+                    {**load, "identifiers": [identifier(FINGERPRINT)], "parent": 2},
+                    {"kind": "split", "component": "Splitter", "identifiers": [], "hosts": []},
+                ],
+            },
+        },
+    )
+    (run,) = find_value(IBAN, tmp_path).runs
+    assert [(s.step, s.component, s.calls, s.occurrences) for s in run.steps] == [
+        (1, "PyPDFLoader", 3, 3),
+        (2, "Splitter", 1, 0),
+    ]
+    assert run.reached == 1
 
 
 def test_a_value_no_run_found_is_not_found_and_nothing_is_written(reports: Path):
@@ -169,6 +206,7 @@ def test_the_command_prints_the_trail_and_never_the_value(reports: Path):
     output = " ".join(result.output.split())
     assert "contracts-ingest" in output and "msa.pdf" in output
     assert "api.openai.com" in output
+    assert "Mask not there" in output
     assert "NWBK" not in output and "6016" not in output
 
     asked = runner.invoke(app, ["find", "--in", str(reports)], input=IBAN + "\n")

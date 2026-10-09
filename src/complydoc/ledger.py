@@ -26,7 +26,7 @@ from complydoc.config.loader import load_config
 from complydoc.config.schema import Config
 from complydoc.fingerprint import identifier_fingerprint
 
-__all__ = ["DocumentSighting", "RunSighting", "StageSighting", "Trail", "find_value"]
+__all__ = ["DocumentSighting", "RunSighting", "StepSighting", "Trail", "find_value"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -37,15 +37,27 @@ class DocumentSighting:
 
 
 @dataclass(frozen=True, slots=True)
-class StageSighting:
-    """A pipeline step whose output, or for an embedding step whose input, held the value."""
+class StepSighting:
+    """A step of a pipeline, and whether what it passed on still held the value.
+
+    A step is what the trace shows as one: calls one after another of the same component,
+    as a loader called once a file. Every step of the run is listed, the ones that never
+    held the value too, since where it stopped is as much the answer as where it went.
+    """
 
     step: int
     kind: str
     component: str
+    calls: int
     occurrences: int
+    """How many times the value was in what the step passed on, or for an embedding step
+    sent. Zero where it was not."""
     hosts: list[str] = field(default_factory=list)
     """Where the step sent what it was given, when it sent it anywhere."""
+
+    @property
+    def held(self) -> bool:
+        return self.occurrences > 0
 
 
 @dataclass(frozen=True, slots=True)
@@ -61,7 +73,10 @@ class RunSighting:
     started_at: str
     commit: str | None
     documents: list[DocumentSighting]
-    stages: list[StageSighting]
+    steps: list[StepSighting]
+    """Every step of a traced run, in order. Empty for an audit."""
+    reached: int | None
+    """The last step that held the value. None when no step did, as in an audit."""
     sent_to: list[str]
     """Every host a step holding the value sent its input to."""
 
@@ -96,25 +111,42 @@ def candidate_fingerprints(value: str, config: Config) -> set[str]:
     return {identifier_fingerprint(category, value) for category in config.sensitive.categories}
 
 
-def _stage_sightings(trace: dict[str, Any], wanted: set[str]) -> list[StageSighting]:
-    sightings = []
-    for step, stage in enumerate(trace.get("stages") or [], start=1):
+def _step_sightings(trace: dict[str, Any], wanted: set[str]) -> list[StepSighting]:
+    steps: list[StepSighting] = []
+    last: tuple[Any, Any, Any] | None = None
+    for stage in trace.get("stages") or []:
+        if stage.get("parent") is not None:
+            continue
         held = sum(
             int(identifier.get("occurrences") or 1)
             for identifier in stage.get("identifiers") or []
             if identifier.get("fingerprint") in wanted
         )
-        if held:
-            sightings.append(
-                StageSighting(
-                    step=step,
-                    kind=str(stage.get("kind") or ""),
-                    component=str(stage.get("component") or ""),
-                    occurrences=held,
-                    hosts=list(stage.get("hosts") or []),
+        hosts = list(stage.get("hosts") or [])
+        same = (stage.get("kind"), stage.get("component"), stage.get("method"))
+        if steps and same == last:
+            before = steps[-1]
+            steps[-1] = StepSighting(
+                before.step,
+                before.kind,
+                before.component,
+                before.calls + 1,
+                before.occurrences + held,
+                list(dict.fromkeys([*before.hosts, *hosts])),
+            )
+        else:
+            steps.append(
+                StepSighting(
+                    len(steps) + 1,
+                    str(stage.get("kind") or ""),
+                    str(stage.get("component") or ""),
+                    1,
+                    held,
+                    hosts,
                 )
             )
-    return sightings
+        last = same
+    return steps
 
 
 def _in_report(data: dict[str, Any], name: str, wanted: set[str]) -> tuple[RunSighting, Any] | None:
@@ -133,8 +165,10 @@ def _in_report(data: dict[str, Any], name: str, wanted: set[str]) -> tuple[RunSi
                 DocumentSighting(str(document.get("relative_path") or ""), pages, len(matches))
             )
     trace = data.get("trace") or {}
-    stages = _stage_sightings(trace, wanted)
-    if not documents and not stages:
+    pipeline = bool(trace) and trace.get("kind") != "audit"
+    steps = _step_sightings(trace, wanted) if pipeline else []
+    holding = [step for step in steps if step.held]
+    if not documents and not holding:
         return None
     if described is None:
         described = next(
@@ -144,7 +178,6 @@ def _in_report(data: dict[str, Any], name: str, wanted: set[str]) -> tuple[RunSi
             if identifier.get("fingerprint") in wanted
         )
     run = data.get("run") or {}
-    pipeline = bool(trace) and trace.get("kind") != "audit"
     sighting = RunSighting(
         report=name,
         name=str((trace.get("name") if pipeline else None) or run.get("target") or name),
@@ -152,8 +185,9 @@ def _in_report(data: dict[str, Any], name: str, wanted: set[str]) -> tuple[RunSi
         started_at=str(run.get("started_at") or ""),
         commit=((run.get("context") or {}).get("commit") or None),
         documents=documents,
-        stages=stages,
-        sent_to=list(dict.fromkeys(host for stage in stages for host in stage.hosts)),
+        steps=steps,
+        reached=holding[-1].step if holding else None,
+        sent_to=list(dict.fromkeys(host for step in holding for host in step.hosts)),
     )
     return sighting, described
 

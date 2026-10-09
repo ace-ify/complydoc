@@ -1,4 +1,4 @@
-import { BookOpenIcon, ChevronRightIcon, ScanSearchIcon } from "lucide-react";
+import { BookOpenIcon, ChevronRightIcon } from "lucide-react";
 import { useContext, useState, type ReactNode } from "react";
 import { Logo } from "@/components/Logo";
 import {
@@ -16,9 +16,7 @@ import {
   SidebarRail,
   SidebarSeparator,
 } from "@/components/ui/sidebar";
-import { FindValueDialog } from "@/features/find/FindValueDialog";
 import { FolderRunsContext } from "@/hooks/useFolderRuns";
-import { localConfig } from "@/hooks/useLocalReports";
 import { cn } from "@/lib/utils";
 import { guideFor } from "@/report/docs";
 import { formatCount } from "@/report/format";
@@ -39,7 +37,7 @@ interface AppSidebarProps {
 /** The report's pages, grouped by what they are for. */
 const GROUPS: { label: string; pages: Page[] }[] = [
   { label: "Overview", pages: ["home", "pipeline"] },
-  { label: "Findings", pages: ["security", "documents"] },
+  { label: "Findings", pages: ["security", "documents", "find"] },
   { label: "Ingestion", pages: ["evals", "chunks", "cost"] },
 ];
 
@@ -116,9 +114,6 @@ function readFolded(): boolean {
 export function AppSidebar({ report, page, switcher, search }: AppSidebarProps) {
   const { runs } = useContext(FolderRunsContext);
   const [missingOpen, setMissingOpen] = useState(readFolded);
-  // Asked of the server that served the page, so there only when there is one.
-  const [servedLocally] = useState(() => localConfig() !== null);
-  const [finding, setFinding] = useState(false);
   const toggleMissing = () => {
     const next = !missingOpen;
     setMissingOpen(next);
@@ -207,14 +202,6 @@ export function AppSidebar({ report, page, switcher, search }: AppSidebarProps) 
         <SidebarFooter>
           <SidebarSeparator className="mx-0" />
           <SidebarMenu className="group-data-[collapsible=icon]:gap-1">
-            {servedLocally && (
-              <SidebarMenuItem>
-                <SidebarMenuButton tooltip="Find a value" onClick={() => setFinding(true)}>
-                  <ScanSearchIcon />
-                  <span>Find a value</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            )}
             <SidebarMenuItem>
               <SidebarMenuButton asChild isActive={page === "settings"} tooltip={PAGE_INFO.settings.label}>
                 <a href="#settings" aria-current={page === "settings" ? "page" : undefined}>
@@ -235,7 +222,6 @@ export function AppSidebar({ report, page, switcher, search }: AppSidebarProps) 
         </SidebarFooter>
       )}
       <SidebarRail />
-      {servedLocally && <FindValueDialog open={finding} onOpenChange={setFinding} />}
     </Sidebar>
   );
 }
