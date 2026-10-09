@@ -139,7 +139,9 @@ export function AppSidebar({ report, page, switcher, search }: AppSidebarProps) 
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="gap-3">
+      {/* Folded to its icons, the rail keeps one rhythm: the same step between every button,
+          and a hairline where a group's name would be. */}
+      <SidebarHeader className="gap-3 group-data-[collapsible=icon]:gap-1">
         {/* Collapsed, the mark sits in a square like the page buttons below it, centred and at their icons' size. */}
         <div className="flex h-8 items-center px-2 group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:[&_svg]:h-auto group-data-[collapsible=icon]:[&_svg]:w-5">
           <Logo size={22} withName={false} />
@@ -157,10 +159,13 @@ export function AppSidebar({ report, page, switcher, search }: AppSidebarProps) 
             const pages = group.pages.filter(has);
             if (pages.length === 0) return null;
             return (
-              <SidebarGroup key={group.label}>
+              <SidebarGroup
+                key={group.label}
+                className="group-data-[collapsible=icon]:border-t group-data-[collapsible=icon]:border-sidebar-border group-data-[collapsible=icon]:py-1.5"
+              >
                 <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
                 <SidebarGroupContent>
-                  <SidebarMenu>
+                  <SidebarMenu className="group-data-[collapsible=icon]:gap-1">
                     {pages.map((id) => (
                       <PageLink key={id} id={id} page={page} count={countFor(report, id, runs.length)} />
                     ))}
@@ -201,7 +206,7 @@ export function AppSidebar({ report, page, switcher, search }: AppSidebarProps) 
       {report && (
         <SidebarFooter>
           <SidebarSeparator className="mx-0" />
-          <SidebarMenu>
+          <SidebarMenu className="group-data-[collapsible=icon]:gap-1">
             {servedLocally && (
               <SidebarMenuItem>
                 <SidebarMenuButton tooltip="Find a value" onClick={() => setFinding(true)}>
