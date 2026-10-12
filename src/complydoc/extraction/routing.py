@@ -16,8 +16,8 @@ With a vision model available:
 
 A page with a text layer takes the vision route when the layer is not text (a font
 with no usable mapping to characters, or an embedded OCR layer that read noise),
-when it carries a ruled table whose rows do not survive in the text, or when it is
-mostly picture with a caption for a text layer. A page with no text layer always does:
+when it carries a table with merged or stacked header cells, or when it is mostly
+picture with a caption for a text layer. A page with no text layer always does:
 on two public benchmarks OCR kept far less of such pages than a vision model.
 
 Without one (`vision: false`), routing uses only what costs nothing:
@@ -101,6 +101,10 @@ def _table_needs_vision(page: Page, wanted: str) -> str | None:
         return None
     if wanted == "all":
         return "a ruled table, whose structure plain text cannot carry"
+    if wanted == "complex":
+        if any(table.merged_cells > 0 or table.header_depth > 1 for table in ruled):
+            return "a table with merged or stacked header cells, which plain text loses"
+        return None
     compared = sum(table.rows_compared or 0 for table in ruled)
     intact = sum(table.rows_intact or 0 for table in ruled)
     if compared and intact < compared:

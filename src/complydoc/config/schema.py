@@ -366,27 +366,27 @@ class RoutingConfig(_Base):
     """Scan resolution below which OCR reads poorly. Only used with `vision` off, to say so."""
     min_ocr_confidence: float = 75.0
     """OCR confidence below which a reading is poor. Only used with `vision` off, to say so."""
-    vision_for_tables: Literal["all", "broken", "none"] = "broken"
+    vision_for_tables: Literal["all", "complex", "broken", "none"] = "complex"
     """Which pages go to a vision model for their tables.
 
-    `broken`: a page with a ruled table whose rows do not survive in the text layer. `all`:
-    every page with a ruled table, for when the table's structure matters, since plain text
-    cannot carry it. `none`: tables are read as text. On a public benchmark `broken` kept more
-    of the tables and of the running text than picking tables by merged or stacked headers,
-    for the same number of pages.
+    `complex`: a page with a ruled table that has merged or stacked header cells. `broken`: a
+    page with a ruled table whose rows do not survive in the text layer. `all`: every page with
+    a ruled table, for when the table's structure matters, since plain text cannot carry it.
+    `none`: tables are read as text.
+
+    On a public benchmark, the more table pages go to a vision model the more of the tables is
+    kept. `complex` and `broken` send a similar number of pages and could not be told apart on
+    held-out pages; `all` keeps the most and sends about twice as many.
     """
 
     @model_validator(mode="before")
     @classmethod
     def _old_table_setting(cls, values: Any) -> Any:
-        """Read `vision_for_complex_tables`, the setting this one replaced.
-
-        True was its default and now means the default; false asked for no table rule.
-        """
+        """Read `vision_for_complex_tables`, the setting this one replaced."""
         if isinstance(values, dict) and "vision_for_complex_tables" in values:
             values = dict(values)
             wanted = values.pop("vision_for_complex_tables")
-            values.setdefault("vision_for_tables", "broken" if wanted else "none")
+            values.setdefault("vision_for_tables", "complex" if wanted else "none")
         return values
 
     verify_min_coverage_pct: float = Field(default=90.0, ge=0.0, le=100.0)

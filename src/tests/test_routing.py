@@ -85,29 +85,49 @@ def table(*, intact: int | None, compared: int | None, found_by: str = "lines") 
     )
 
 
-def test_a_table_whose_rows_broke_in_the_text_goes_to_a_vision_model():
-    broken = table(intact=2, compared=5)
-    route, reason = route_of(page(text=PROSE, text_share=0.6, tables=[broken]))
+BROKEN_ROWS = RoutingConfig(vision_for_tables="broken")
+
+
+def test_a_table_with_merged_cells_goes_to_a_vision_model():
+    merged = TableInfo(rows=4, cols=3, header_depth=1, merged_cells=2)
+    route, reason = route_of(page(text=PROSE, text_share=0.6, tables=[merged]))
     assert route == "vision"
-    assert "2 of 5 rows survive" in reason
+    assert "merged or stacked header cells" in reason
 
 
-def test_a_table_whose_rows_survived_stays_on_the_text_layer():
-    whole = table(intact=5, compared=5)
-    assert route_of(page(text=PROSE, text_share=0.5, tables=[whole]))[0] == "text"
+def test_stacked_headers_go_to_a_vision_model_too():
+    stacked = TableInfo(rows=6, cols=4, header_depth=2, merged_cells=0)
+    assert route_of(page(text=PROSE, text_share=0.5, tables=[stacked]))[0] == "vision"
 
 
-def test_a_table_with_merged_cells_is_judged_by_its_rows_like_any_other():
-    """The shape of a table did not predict what plain text loses; its rows do."""
+def test_a_plain_table_stays_on_the_text_layer():
+    plain = table(intact=2, compared=5)
+    assert route_of(page(text=PROSE, text_share=0.5, tables=[plain]))[0] == "text"
+
+
+def test_tables_can_be_sent_when_their_rows_broke_in_the_text():
+    built = page(text=PROSE, text_share=0.6, tables=[table(intact=2, compared=5)])
+    [decided] = plan_routes(document(built), BROKEN_ROWS).pages
+    assert decided.route == "vision"
+    assert "2 of 5 rows survive" in decided.reason
+
+
+def test_under_that_setting_shape_does_not_matter_when_the_rows_survived():
+    whole = page(text=PROSE, text_share=0.5, tables=[table(intact=5, compared=5)])
     merged = TableInfo(
         rows=4, cols=3, header_depth=2, merged_cells=2, rows_intact=3, rows_compared=3
     )
-    assert route_of(page(text=PROSE, text_share=0.6, tables=[merged]))[0] == "text"
+    second = page(2, text=PROSE, text_share=0.5, tables=[merged])
+    routing = plan_routes(document(whole, second), BROKEN_ROWS)
+    assert [p.route for p in routing.pages] == ["text", "text"]
 
 
-def test_a_table_guessed_from_alignment_is_not_grounds_for_a_vision_model():
+@pytest.mark.parametrize("setting", ["complex", "broken", "all"])
+def test_a_table_guessed_from_alignment_is_not_grounds_for_a_vision_model(setting):
     guessed = table(intact=0, compared=5, found_by="alignment")
-    assert route_of(page(text=PROSE, text_share=0.5, tables=[guessed]))[0] == "text"
+    built = page(text=PROSE, text_share=0.5, tables=[guessed])
+    [decided] = plan_routes(document(built), RoutingConfig(vision_for_tables=setting)).pages
+    assert decided.route == "text"
 
 
 def test_every_ruled_table_can_be_sent_to_a_vision_model():
@@ -125,7 +145,7 @@ def test_tables_can_be_left_to_the_text_layer():
     assert decided.route == "text"
 
 
-@pytest.mark.parametrize(("old", "new"), [(True, "broken"), (False, "none")])
+@pytest.mark.parametrize(("old", "new"), [(True, "complex"), (False, "none")])
 def test_the_setting_this_one_replaced_is_still_read(old, new):
     assert RoutingConfig(vision_for_complex_tables=old).vision_for_tables == new
 
@@ -224,9 +244,9 @@ def test_without_a_vision_model_a_poor_scan_says_what_would_read_it_better():
 def test_without_a_vision_model_a_text_layer_is_read_whatever_its_state():
     """A poor layer still kept more than OCR on the pages measured."""
     noise = (".- -,,.;; ::: 1# -i' .:|r ' .:.' .::.: " * 12).strip()
-    broken = table(intact=1, compared=5)
+    merged = TableInfo(rows=4, cols=3, merged_cells=2, header_depth=1)
     routing = plan_routes(
-        document(page(1, text=noise, text_share=0.6), page(2, text=PROSE, tables=[broken])), FREE
+        document(page(1, text=noise, text_share=0.6), page(2, text=PROSE, tables=[merged])), FREE
     )
     assert [p.route for p in routing.pages] == ["text", "text"]
     assert routing.counts["vision"] == 0
