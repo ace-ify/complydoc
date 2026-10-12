@@ -5,7 +5,13 @@ way of using complydoc, such as a command, or for a breaking change to the repor
 a config key, which the release then says. `schema_version` in the JSON is versioned
 separately.
 
-## [Unreleased]
+## [0.7.1] — 2026-10-12
+
+How a PDF is read and where each page is sent now follow what was measured on two public
+parsing benchmarks, and were then checked on four books against 0.7.0. The same file can give
+different text, character counts and routes than it did, and a routing plan sends more pages
+to a vision model. `--extractor pdfplumber` and the settings under `routing` give the
+earlier behaviour back.
 
 ### Changed
 
@@ -21,8 +27,11 @@ separately.
   with no text layer goes to a vision model, where it went to OCR unless the scan was coarse
   or poorly read. A page whose text layer is not text, because its font does not map to
   characters or because it is an embedded OCR layer that read noise, goes to a vision model
-  too, while pages of figures and text in any script count as text; `max_control_char_pct` and `min_wordlike_pct` under `routing` set where that starts. Tokens that are only punctuation are not counted, and a name such as `x12` counts as a word, so a table of contents with dot leaders and a listing of variable names stay text. A
-  plan made before this release will send more pages to vision.
+  too, while pages of figures and text in any script count as text; `max_control_char_pct`
+  and `min_wordlike_pct` under `routing` set where that starts. Tokens that are only
+  punctuation are not counted, and a name such as `x12` counts as a word, so a table of
+  contents with dot leaders and a listing of variable names stay text. A plan made before
+  this release will send more pages to vision.
 - `routing.vision_for_tables` replaces `vision_for_complex_tables` and takes `complex`,
   `broken`, `all` or `none`. `complex`, the default, is what the old setting did when true: a
   ruled table with merged or stacked header cells sends its page to a vision model. `broken`
@@ -41,10 +50,10 @@ separately.
   measured; the rest are listed under `not_counted`. On four books the detector had named a
   different stray language for one page of each.
 - A PDF's text is read in the order the file stores it, with the gap that counts as a space
-  scaled to the size of the type. Before, the default extractor sorted characters by where
-  they sat on the page, which read a two-column page straight across and joined words set
-  in small type. On a public parsing benchmark's reading tests the default reading now keeps
-  41% where it kept 7%; single-column documents read as they did. Where a ruled table is
+  scaled to the size of the type. Before, text was sorted by where it sat on the page, which
+  read a two-column page straight across and joined words set in small type. On a public
+  parsing benchmark's reading tests the kept text now passes 48% where it passed 7%, and the
+  `pdfplumber` extractor 41%; single-column documents read as they did. Where a ruled table is
   stored column by column, the page is still read by position so that its rows stay together,
   and the page says so in its notes. A two-column document's extracted text, chunks and the
   position of findings in them change with this.
