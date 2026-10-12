@@ -288,7 +288,7 @@ class IngestOptions:
     max_render_pages: int = 50
     """Cap on how many pages of one document are rasterised, to bound memory."""
     extract_tables: bool = True
-    extractor: str = "pdfplumber"
+    extractor: str = "complydoc"
     """Which extractor's output the report is built from."""
     compare_extractors: tuple[str, ...] = ()
     """Others to run alongside, for comparison only. They never change a finding."""

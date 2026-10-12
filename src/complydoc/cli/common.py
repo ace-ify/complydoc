@@ -215,8 +215,9 @@ ExtractorOpt = Annotated[
     str | None,
     typer.Option(
         "--extractor",
-        help="Which library reads the text layer. Defaults to pdfplumber, the "
-        "richest; pdfium is far quicker and reads no table structure. "
+        help="Which library reads the text layer. Defaults to complydoc's own "
+        "reading: text through pdfium, boxes and tables through pdfplumber. "
+        "pdfium alone is far quicker and reads no table structure. "
         "See: complydoc extractors.",
     ),
 ]

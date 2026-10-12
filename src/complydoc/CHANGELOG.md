@@ -9,6 +9,13 @@ separately.
 
 ### Changed
 
+- The text kept for a page with a text layer is now read through pdfium, with words that
+  were split across two lines put back together, while word boxes and tables still come from
+  pdfplumber. On two public parsing benchmarks this reading kept more of a page than any
+  other reading of the text layer. It is a new extractor, `complydoc`, and the default;
+  `--extractor pdfplumber` gives the reading earlier releases kept. Reports name the reader
+  that was kept, so a report from this release says `complydoc` where an older one says
+  `pdfplumber`, and text, character counts and findings on the same file can differ.
 - Page routing follows the rules that kept the most on two public parsing benchmarks. A page
   with no text layer goes to a vision model, where it went to OCR unless the scan was coarse
   or poorly read. A page whose text layer is not text, because its font does not map to

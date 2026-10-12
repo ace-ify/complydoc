@@ -248,7 +248,7 @@ def _cuts_too_many_words(words: list[Any], interior: list[float]) -> bool:
 
 
 def _read_by_position_if_rows_need_it(
-    page: Page, plumber_page: Any, found: list[tuple[TableInfo, Any]]
+    page: Page, plumber_page: Any, found: list[tuple[TableInfo, Any]], kept: str
 ) -> None:
     """Read the page by position instead, when that is what keeps its tables' rows together.
 
@@ -270,8 +270,8 @@ def _read_by_position_if_rows_need_it(
         return
     page.text = by_position
     page.tables[:] = again
-    if "pdfplumber" in page.readings:
-        page.readings["pdfplumber"] = by_position
+    if kept in page.readings:
+        page.readings[kept] = by_position
     page.notes.append(
         "read by position on the page, because a table here is stored column by column"
     )
@@ -361,7 +361,7 @@ def _wants_pdfium(options: IngestOptions) -> bool:
 
     for name in (options.extractor, *options.compare_extractors):
         engine = extractor_by_id(name)
-        if engine is not None and getattr(engine, "id", "") == "pdfium":
+        if engine is not None and getattr(engine, "needs_pdfium", False):
             return True
     return False
 
@@ -644,8 +644,7 @@ class PdfLoader:
                     if (info := _table_shape(table)) is not None
                 ]
                 page.tables.extend(_with_fidelity(info, table, page.text) for info, table in found)
-                if options.extractor == "pdfplumber":
-                    _read_by_position_if_rows_need_it(page, plumber_page, found)
+                _read_by_position_if_rows_need_it(page, plumber_page, found, options.extractor)
                 if not page.tables:
                     page.tables.extend(_aligned_tables(plumber_page, words, page.text))
             except Exception as exc:
