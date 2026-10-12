@@ -130,11 +130,12 @@ def _control_share(text: str) -> float:
 def _sensible_share(text: str) -> float:
     """Share of tokens that are a word in any script, or a number.
 
-    A word is two or more characters of which at least four in five are letters or the
-    marks that attach to them, which covers scripts written without spaces and scripts that
-    stack marks on letters. A number is digits with the separators numbers are written
-    with. What is left is noise: symbols, letters mapped to the wrong glyphs. Counting only
-    alphabetic words called pages of figures, and whole scripts, not text.
+    A word is two or more characters of which at least four in five are letters, the marks
+    that attach to them, or digits, which covers scripts written without spaces, scripts
+    that stack marks on letters, and names such as `x12` or `B2B`. A number is digits with
+    the separators numbers are written with. What is left is noise: symbols, letters mapped
+    to the wrong glyphs. Counting only alphabetic words called pages of figures, and whole
+    scripts, not text.
 
     A token that is only punctuation is not counted either way. The dots that lead to a page
     number in a table of contents are not noise, and counting them sent tables of contents
@@ -144,8 +145,8 @@ def _sensible_share(text: str) -> float:
     def sensible(token: str) -> bool:
         if _NUMBER.fullmatch(token):
             return True
-        lettered = sum(unicodedata.category(c)[0] in "LM" for c in token)
-        return len(token) >= 2 and lettered / len(token) >= 0.8
+        written = sum(unicodedata.category(c)[0] in "LMN" for c in token)
+        return len(token) >= 2 and written / len(token) >= 0.8
 
     tokens = [stripped for token in text.split() if (stripped := token.strip(_EDGE_PUNCTUATION))]
     return sum(sensible(token) for token in tokens) / max(1, len(tokens))

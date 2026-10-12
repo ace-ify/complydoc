@@ -211,6 +211,18 @@ def test_a_table_of_contents_is_text():
     assert route_of(page(text=line * 30, text_share=0.6))[0] == "text"
 
 
+def test_a_listing_of_names_with_digits_is_text():
+    """Feature names printed by a program, as a book on machine learning is full of."""
+    listing = "'x1 x3', 'x1 x4', 'x1 x10', 'x2^2', 'x2 x3', 'x2 x12', 'x3^2', 'x3 x4',\r\n" * 20
+    assert route_of(page(text=listing, text_share=0.6))[0] == "text"
+
+
+def test_a_scan_whose_only_text_is_its_file_name_has_no_text_layer():
+    route, reason = route_of(page(text="scan003.TIF", text_share=0.01, image_share=0.9, dpi=203))
+    assert route == "vision"
+    assert "no text layer" in reason
+
+
 def test_scripts_without_spaces_or_with_stacked_marks_are_text():
     japanese = "知名度の高いこの証券取引所は、サイバー犯罪者の格好の標的となっています。" * 6
     hindi = "क्रम संख्या कार्य का विवरण दर रुपये प्रति कुंतल एक ही परिसर के भीतर " * 6

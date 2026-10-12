@@ -21,7 +21,7 @@ separately.
   with no text layer goes to a vision model, where it went to OCR unless the scan was coarse
   or poorly read. A page whose text layer is not text, because its font does not map to
   characters or because it is an embedded OCR layer that read noise, goes to a vision model
-  too, while pages of figures and text in any script count as text; `max_control_char_pct` and `min_wordlike_pct` under `routing` set where that starts. Tokens that are only punctuation are not counted, so a table of contents with dot leaders stays text. A
+  too, while pages of figures and text in any script count as text; `max_control_char_pct` and `min_wordlike_pct` under `routing` set where that starts. Tokens that are only punctuation are not counted, and a name such as `x12` counts as a word, so a table of contents with dot leaders and a listing of variable names stay text. A
   plan made before this release will send more pages to vision.
 - `routing.vision_for_tables` replaces `vision_for_complex_tables` and takes `complex`,
   `broken`, `all` or `none`. `complex`, the default, is what the old setting did when true: a
@@ -36,6 +36,10 @@ separately.
 
 ### Fixed
 
+- `language_count` no longer counts a language found on a single page of a long document.
+  A language counts when it is the main one, is found on two pages, or on 2% of the pages
+  measured; the rest are listed under `not_counted`. On four books the detector had named a
+  different stray language for one page of each.
 - A PDF's text is read in the order the file stores it, with the gap that counts as a space
   scaled to the size of the type. Before, the default extractor sorted characters by where
   they sat on the page, which read a two-column page straight across and joined words set
