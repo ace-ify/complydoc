@@ -22,13 +22,23 @@ from complydoc.ingest.extractors.registry import register
 _SPLIT_WORD = re.compile("[\\ufffe\\u00ad]\\s*")
 """What pdfium writes where a word is broken across two lines, and the space after it."""
 
+_SPLIT_AT_A_HYPHEN = re.compile("[\\ufffe\\u00ad]\\s*(?=[A-Z0-9])")
+"""The same, before a capital or a digit: the line broke at a hyphen the word is written with."""
+
 
 def rejoined(text: str) -> str:
     """Text with words split across lines put back together, and compatibility forms folded.
 
+    pdfium writes one mark for both a word hyphenated to fit the line and a compound that
+    happened to break at its own hyphen. What follows tells them apart well enough: a word
+    continues in lower case, so before a capital or a digit the hyphen is kept, and
+    "Fine-Tuning" does not become "FineTuning". On two parsing benchmarks this was never
+    worse than dropping every mark.
+
     Folding turns a ligature or a full-width digit into the plain characters a search or a
     detector looks for, which is what pdfplumber's own text assembly already does.
     """
+    text = _SPLIT_AT_A_HYPHEN.sub("-", text)
     return unicodedata.normalize("NFKC", _SPLIT_WORD.sub("", text))
 
 

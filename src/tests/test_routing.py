@@ -205,6 +205,12 @@ def test_a_page_of_figures_is_text():
     assert route_of(page(text=figures, text_share=0.6))[0] == "text"
 
 
+def test_a_table_of_contents_is_text():
+    """Dot leaders are punctuation, not noise. Found on four books, where they went to vision."""
+    line = "1.2 Historical Development and Key Milestones " + ". " * 40 + "6\r\n"
+    assert route_of(page(text=line * 30, text_share=0.6))[0] == "text"
+
+
 def test_scripts_without_spaces_or_with_stacked_marks_are_text():
     japanese = "知名度の高いこの証券取引所は、サイバー犯罪者の格好の標的となっています。" * 6
     hindi = "क्रम संख्या कार्य का विवरण दर रुपये प्रति कुंतल एक ही परिसर के भीतर " * 6

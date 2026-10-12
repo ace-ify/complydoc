@@ -278,3 +278,10 @@ def test_a_word_split_across_two_lines_is_put_back_together():
 
     assert rejoined("the com\ufffe\r\nplement of the set") == "the complement of the set"
     assert rejoined("soft\u00adhyphen and a \ufb01gure") == "softhyphen and a figure"
+
+
+def test_a_compound_that_broke_at_its_own_hyphen_keeps_it():
+    from complydoc.ingest.extractors.own import rejoined
+
+    assert rejoined("Soft Prompt-Based Fine￾\r\nTuning") == "Soft Prompt-Based Fine-Tuning"
+    assert rejoined("GPT￾\r\n4 and fine￾\r\ntuning") == "GPT-4 and finetuning"

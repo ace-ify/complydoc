@@ -15,12 +15,13 @@ separately.
   other reading of the text layer. It is a new extractor, `complydoc`, and the default;
   `--extractor pdfplumber` gives the reading earlier releases kept. Reports name the reader
   that was kept, so a report from this release says `complydoc` where an older one says
-  `pdfplumber`, and text, character counts and findings on the same file can differ.
+  `pdfplumber`, and text, character counts and findings on the same file can differ. A word
+  hyphenated to fit a line is rejoined; a compound that broke at its own hyphen keeps it.
 - Page routing follows the rules that kept the most on two public parsing benchmarks. A page
   with no text layer goes to a vision model, where it went to OCR unless the scan was coarse
   or poorly read. A page whose text layer is not text, because its font does not map to
   characters or because it is an embedded OCR layer that read noise, goes to a vision model
-  too, while pages of figures and text in any script count as text; `max_control_char_pct` and `min_wordlike_pct` under `routing` set where that starts. A
+  too, while pages of figures and text in any script count as text; `max_control_char_pct` and `min_wordlike_pct` under `routing` set where that starts. Tokens that are only punctuation are not counted, so a table of contents with dot leaders stays text. A
   plan made before this release will send more pages to vision.
 - `routing.vision_for_tables` replaces `vision_for_complex_tables` and takes `complex`,
   `broken`, `all` or `none`. `complex`, the default, is what the old setting did when true: a
