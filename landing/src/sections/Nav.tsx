@@ -6,6 +6,7 @@ import { links, VERSION } from "@/links";
 
 const SECTIONS = [
   { href: "#problem", label: "Problem" },
+  { href: "#features", label: "Features" },
   { href: "#questions", label: "Questions" },
   { href: "#router", label: "Page router" },
   { href: "#injection", label: "Prompt injection" },

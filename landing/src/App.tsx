@@ -1,4 +1,5 @@
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { Features } from "@/sections/Features";
 import { Footer } from "@/sections/Footer";
 import { GetStarted } from "@/sections/GetStarted";
 import { Hero } from "@/sections/Hero";
@@ -18,6 +19,7 @@ export function App() {
         <Hero />
         <Providers />
         <Problem />
+        <Features />
         <Questions />
         <PageRouter />
         <Injection />

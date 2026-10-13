@@ -25,5 +25,7 @@ export const links = {
   compareLoaders: `${DOCS}/guides/compare-loaders/`,
   compareFileTypes: `${DOCS}/guides/compare-loaders/#several-file-types`,
   chunks: `${DOCS}/guides/inspect-chunks/`,
+  retrieval: `${DOCS}/guides/inspect-chunks/#retrieval-check`,
+  team: `${DOCS}/guides/team/`,
   identifiers: `${DOCS}/reference/identifiers/`,
 } as const;
