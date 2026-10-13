@@ -1,37 +1,85 @@
-import { FileCogIcon } from "lucide-react";
-import { CodeBlock } from "@/components/CodeBlock";
-import { FeatureRow } from "@/components/FeatureRow";
+import diffDark from "@/assets/screens/diff-dark.webp";
+import diffLight from "@/assets/screens/diff-light.webp";
+import documentDark from "@/assets/screens/document-dark.webp";
+import documentLight from "@/assets/screens/document-light.webp";
+import findDark from "@/assets/screens/find-dark.webp";
+import findLight from "@/assets/screens/find-light.webp";
+import securityDark from "@/assets/screens/security-dark.webp";
+import securityLight from "@/assets/screens/security-light.webp";
 import expectDarkPoster from "@/assets/recordings/expect-dark.webp";
 import expectDark from "@/assets/recordings/expect-dark.mp4";
 import expectLightPoster from "@/assets/recordings/expect-light.webp";
 import expectLight from "@/assets/recordings/expect-light.mp4";
+import { FeatureRow } from "@/components/FeatureRow";
 import { Recording } from "@/components/Recording";
+import { RouteLegend, RouteMap } from "@/components/RouteMap";
+import { Screenshot } from "@/components/Screenshot";
 import { Section } from "@/components/Section";
-import { TeamDiagram } from "@/components/TeamDiagram";
+import { ROUTED_DOCUMENTS, ROUTING_COST_USD, ROUTING_MODEL } from "@/data/routing";
 import { links } from "@/links";
 
-/** A policy as `complydoc check` reads it, from the policy guide. */
-const POLICY = `version: 1
-rules:
-  no_hidden:
-    severity: medium
-  no_identifiers_sent:
-    severity: high
-  no_network: true
-  no_regressions:
-    baseline: baseline.json`;
+const SAVED = Math.round((1 - ROUTING_COST_USD.routed / ROUTING_COST_USD.vision) * 100);
 
 export function Features() {
   return (
     <Section
       id="features"
       eyebrow="What it does"
-      title="Measure the pipeline before your users do."
-      lead="Each check runs on your own documents, on your machine, and gives a result you can read in the viewer or fail a build on."
+      title="Read it. Compare it. Expect it. Follow it."
+      lead="Ingestion decides what your model will ever see, and none of its failures raise an error: a table flattened into lines, a scan that loads as no text, a clause cut in half, an account number sent to a hosted model. Each of these is a page in the viewer."
     >
       <div className="flex flex-col gap-6">
         <FeatureRow
+          label="Read"
+          title="The document as your pipeline read it."
+          points={[
+            "Every page as text, with numbered lines",
+            "A splitter's chunks drawn over the text",
+            "Each finding opened on the line it sits in",
+          ]}
+          more={{ label: "The viewer", href: links.viewerGuide }}
+          visual={
+            <Screenshot
+              src={{ dark: documentDark, light: documentLight }}
+              zoom={{ scale: 1.55, origin: "42% 22%" }}
+              alt="The viewer's document view: every page with numbered lines, a splitter's chunks drawn over the text, and the findings listed beside it"
+            />
+          }
+        >
+          What a loader returns is rarely what the page shows. See the text your model would be given, where each
+          chunk starts and ends, and what was found in it.
+        </FeatureRow>
+
+        <FeatureRow
+          flip
+          label="Compare"
+          title="Two readers, the same page, line by line."
+          points={[
+            "Side by side or unified",
+            "What one loader keeps that another drops",
+            "A loader named for each file type",
+          ]}
+          more={{ label: "Comparing loaders", href: links.compareLoaders }}
+          visual={
+            <Screenshot
+              src={{ dark: diffDark, light: diffLight }}
+              zoom={{ scale: 1.45, origin: "48% 25%" }}
+              alt="The viewer's diff of two readings of the same document, with added and lost lines marked"
+            />
+          }
+        >
+          Loaders get chosen without checking what they extract. Run several on your own documents and read the
+          difference, instead of trusting a benchmark made of someone else's.
+        </FeatureRow>
+
+        <FeatureRow
+          label="Expect"
           title="Mark what a reading must keep, where you read it."
+          points={[
+            "Select a passage and press Expect",
+            "Every reader and loader scored on your passages",
+            "A lost passage shown beside what came out instead",
+          ]}
           more={{ label: "Evals on your own documents", href: links.evals }}
           visual={
             <Recording
@@ -41,33 +89,76 @@ export function Features() {
             />
           }
         >
-          Select a clause, a total or a table row in a document and press Expect. Every reader and loader is then
-          scored on the passages your own documents must come out with, and a lost one is shown beside what came out
-          in its place.
+          A total, a clause, a row of a table: the passages your documents must come out with become the test every
+          change to the pipeline has to pass.
         </FeatureRow>
+
         <FeatureRow
-          title="One place where the whole team reads the same runs."
           flip
-          more={{ label: "Run it for your team", href: links.team }}
-          visual={<TeamDiagram />}
-        >
-          Runs from every machine and CI job land in one folder, each with the commit it came from. The viewer serves
-          them read-only from a container, behind the sign-in you already have. Nothing leaves your infrastructure.
-        </FeatureRow>
-        <FeatureRow
-          title="Fail the build when ingestion gets worse."
-          more={{ label: "Policy files", href: links.policy }}
+          label="Follow"
+          title="Ask where a value went."
+          points={[
+            "Every document it was read from",
+            "Every step that still held it, and the one that stopped it",
+            "Every host it was sent to",
+          ]}
+          more={{ label: "Find where a value went", href: links.findValue }}
           visual={
-            <CodeBlock
-              title="complydoc check ./documents --policy policy.yaml"
-              icon={<FileCogIcon className="size-3.5" />}
-              lang="yaml"
-              code={POLICY}
+            <Screenshot
+              src={{ dark: findDark, light: findLight }}
+              zoom={{ scale: 1.25, origin: "100% 12%" }}
+              alt="The viewer's Find a value page: an account number found in three runs, stopped by a masking step in one pipeline run and sent to a host in another"
             />
           }
         >
-          A policy file holds a folder or a recorded pipeline to rules: no hidden instructions, no identifier sent to a
-          hosted model, nothing worse than the last run. One command checks them all and exits non-zero.
+          Type an account number or an email address and get its path through every run: loaded here, masked there,
+          embedded and sent to a host in the run where nothing masked it. The value itself is hashed to search and
+          written nowhere.
+        </FeatureRow>
+
+        <FeatureRow
+          label="Protect"
+          title="Identifiers and hidden instructions, before they are indexed."
+          points={[
+            "Personal and financial identifiers, by kind and by document",
+            "Text a reader cannot see and a model can",
+            "Masked in your pipeline or in copies of the files",
+          ]}
+          more={{ label: "Identifiers it finds", href: links.identifiers }}
+          visual={
+            <Screenshot
+              src={{ dark: securityDark, light: securityLight }}
+              zoom={{ scale: 1.35, origin: "62% 18%" }}
+              alt="The viewer's Security page: identifiers found by severity, kind and document, and hidden instructions"
+            />
+          }
+        >
+          Documents carry account numbers, national identifiers and, sometimes, text written for the model that
+          reads them and not for a person. Both are found on your machine and linked to their page.
+        </FeatureRow>
+
+        <FeatureRow
+          flip
+          label="Route"
+          title="Send a page to a vision model only when it needs one."
+          points={[
+            "The text layer where it is usable",
+            "Local OCR for a readable scan",
+            `${SAVED}% less than every page as an image, on these samples`,
+          ]}
+          more={{ label: "Page routing", href: links.routing }}
+          visual={
+            <div className="flex flex-col gap-5 rounded-xl border bg-card p-5 shadow-sm">
+              <p className="text-sm text-muted-foreground">
+                33 pages of 6 sample documents, priced on {ROUTING_MODEL}. Hover a page for its reason.
+              </p>
+              <RouteMap documents={ROUTED_DOCUMENTS} />
+              <RouteLegend />
+            </div>
+          }
+        >
+          A vision model handles any layout and costs the most. The router gives each page a route and the reason
+          for it, and writes a plan your ingestion job reads.
         </FeatureRow>
       </div>
     </Section>

@@ -6,7 +6,8 @@ const COLUMNS = [
   {
     title: "Product",
     items: [
-      { label: "Page router", href: "#router" },
+      { label: "Features", href: "#features" },
+      { label: "Quickstart", href: "#quickstart" },
       { label: "Integrations", href: "#integrations" },
       { label: "Report viewer", href: links.viewer },
       { label: "Changelog", href: links.changelog },
