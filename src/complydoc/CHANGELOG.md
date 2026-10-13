@@ -7,12 +7,32 @@ separately.
 
 ## [Unreleased]
 
+Identifier detection reported far too much that was not an identifier, on research papers
+above all. On 4,200 pages of papers, annual reports, filings and books, 66% of what it reported
+was real; with these fixes 98% is, and nothing real stopped being found. Reported by a reader
+running complydoc on research papers ([#3](https://github.com/complydoc/complydoc/issues/3),
+[#4](https://github.com/complydoc/complydoc/issues/4)).
+
 ### Fixed
 
-- A word is no longer reported as an EU VAT number because it starts with the two letters of a
-  country code and is the right length: `benchmark163` came out as a Belgian number, with full
-  confidence. A VAT number now has to match its country's own format, and its country code has
-  to be written in capitals. Reported by a reader running complydoc on research papers.
+- Rules written with capital letters now need them. Patterns are matched without regard to
+  case, so `via CoT reasoning69` was a street address, `2024, the Court` another, and
+  `benchmark163` an EU VAT number. The address, postcode and identity-number rules insist on
+  the capitals they were written with, and a VAT number has to match its country's format.
+- `confirmed` means a checksum passed. Phone numbers, EU VAT numbers, US social security and
+  employer numbers, the Danish CPR and the National Insurance prefix have no check digit, and
+  were counted as if they had. They are `pattern` now, or `corroborated` beside a label.
+- Digits that are part of something longer are not an identifier: a piece of a decimal, of a
+  figure with thousands separators, or the tail of a DOI.
+- An international phone number starts with a country code written whole. `+3.33) 0.74 17.34`,
+  from a table of score changes, does not.
+- A card number is written as cards are: unbroken or in a card's groups. A row of figures in
+  groups of three that passed the checksum by chance was reported as a confirmed card.
+- A Portuguese address written `n.o 7` is found, and one in lower case, `via Roma 12, 00100`,
+  when a postal code follows it.
+- `cd.parsers.docling()` works with the network blocked once Docling's models are downloaded.
+  The hub client asked whether they were current, complydoc refused the call, and every file
+  failed. The preset now puts the client in offline mode whenever the network is blocked.
 
 ## [0.7.2] — 2026-10-13
 
