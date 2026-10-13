@@ -1,7 +1,11 @@
 import { FileCogIcon } from "lucide-react";
 import { CodeBlock } from "@/components/CodeBlock";
 import { FeatureRow } from "@/components/FeatureRow";
-import { RetrievalDemo } from "@/components/RetrievalDemo";
+import expectDarkPoster from "@/assets/recordings/expect-dark.webp";
+import expectDark from "@/assets/recordings/expect-dark.mp4";
+import expectLightPoster from "@/assets/recordings/expect-light.webp";
+import expectLight from "@/assets/recordings/expect-light.mp4";
+import { Recording } from "@/components/Recording";
 import { Section } from "@/components/Section";
 import { TeamDiagram } from "@/components/TeamDiagram";
 import { links } from "@/links";
@@ -27,12 +31,19 @@ export function Features() {
     >
       <div className="flex flex-col gap-6">
         <FeatureRow
-          title="Ask your chunks the questions your users will."
-          more={{ label: "The retrieval check", href: links.retrieval }}
-          visual={<RetrievalDemo />}
+          title="Mark what a reading must keep, where you read it."
+          more={{ label: "Evals on your own documents", href: links.evals }}
+          visual={
+            <Recording
+              video={{ light: expectLight, dark: expectDark }}
+              poster={{ light: expectLightPoster, dark: expectDarkPoster }}
+              label="A recording of the viewer: a clause is selected in a document with the mouse, Expect this passage is pressed, and the Evals page scores two readers on four expected passages"
+            />
+          }
         >
-          Write the questions and the passage that answers each. complydoc splits your documents with every splitter you
-          are choosing between, and shows which ones cut an answer in two before a retriever ever sees it.
+          Select a clause, a total or a table row in a document and press Expect. Every reader and loader is then
+          scored on the passages your own documents must come out with, and a lost one is shown beside what came out
+          in its place.
         </FeatureRow>
         <FeatureRow
           title="One place where the whole team reads the same runs."

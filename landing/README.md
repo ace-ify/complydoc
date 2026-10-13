@@ -20,7 +20,7 @@ npm run build    # static files in dist/
 | Hero and tour | What complydoc is, and the viewer: Diff, Pages, Cost & time, Security |
 | Providers | The loaders it reads the output of, and the model providers it prices |
 | The problem | Loaders get chosen without checking what they extract, on four counts |
-| Features | One row a feature, text beside the thing itself: the retrieval check, the viewer for a team, the policy gate |
+| Features | One row a feature, text beside the thing itself: evals (a recording of the viewer), the viewer for a team, the policy gate |
 | Questions | Four questions, each with a short answer and one example |
 | The page router | Every sample page, the route it needs and why, and what that saves |
 | Prompt injection | Hidden text revealed, the question complydoc asks a System One model, and the finding |
@@ -37,7 +37,7 @@ on the six sample documents in [`viewer/sample/documents`](../viewer/sample/docu
 | The page router and `src/data/routing.ts` | `complydoc routing ./documents`, the `complydoc-routing.json` it writes |
 | The prompt injection demo | An oblique passage from `src/complydoc/benchmark/corpus.yaml` that no pattern matches. Jev's score is illustrative, within the range [Detection accuracy](../docs/explanation/accuracy.md) measured |
 | The System One call | `src/complydoc/integrations/typesafe.py` |
-| The retrieval check and `src/data/retrieval.ts` | `complydoc chunks` on the sample documents with five questions, chunk sizes 60, 200 and 800, and `--top-k 3` |
+| The evals recording, `src/assets/recordings` | The viewer on the bundled sample documents, driven by `scripts/recordings/expect.mjs` with a real mouse and rendered by `scripts/recordings/render.py`: three passages expected beforehand, a fourth selected in `terms-and-conditions.pdf` |
 
 When a release changes what these print, run them again and update the page.
 
