@@ -9,6 +9,11 @@ separately.
 
 ### Fixed
 
+- "Table rows that survived" no longer counts a row as broken because the table reader merged
+  it with its neighbours. A table with no lines between its rows can come back as one row
+  whose cells each hold every row's value, a line apiece, and that never matched a line of the
+  page. Each of those lines is now compared as the row it is
+  ([#6](https://github.com/complydoc/complydoc/issues/6)).
 - Very small text that is drawn is no longer reported as hidden. A glyph a pixel or two tall
   leaves too little ink at the resolution the page is checked at, so parts of the page
   thumbnails in a paper's figure came out as text "a reader does not see". Small glyphs that
