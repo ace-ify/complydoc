@@ -373,20 +373,22 @@ class RoutingConfig(_Base):
     """Scan resolution below which OCR reads poorly. Only used with `vision` off, to say so."""
     min_ocr_confidence: float = 75.0
     """OCR confidence below which a reading is poor. Only used with `vision` off, to say so."""
-    vision_for_tables: Literal["all", "complex", "broken", "none"] = "none"
+    vision_for_tables: Literal["all", "complex", "broken", "none"] = "complex"
     """Which pages go to a vision model for their tables.
 
-    `none`, the default: tables are read as text. `complex`: a page with a ruled table that
-    has merged or stacked header cells. `broken`: a page with a ruled table whose rows do not
-    survive in the text layer. `all`: every page with a ruled table, for when the table's
-    structure matters, since plain text cannot carry it.
+    `complex`: a page with a ruled table that has merged or stacked header cells. `broken`: a
+    page with a ruled table whose rows do not survive in the text layer. `all`: every page with
+    a ruled table, for when the table's structure matters, since plain text cannot carry it.
+    `none`: tables are read as text.
 
-    A vision model keeps the structure of a table, and on a public benchmark the more table
-    pages go to one the more table tests pass. What was not found is a rule that picks the
-    pages worth paying for: `complex` and `broken` could not be told apart on held-out pages,
-    and on questions about company filings sending tables with merged headers to a vision
-    model cost money and answered no more questions than the text layer. So the default spends
-    nothing, and the rules are there for a pipeline that needs table structure.
+    On a public benchmark, the more table pages go to a vision model the more of the tables is
+    kept. `complex` and `broken` send a similar number of pages and could not be told apart on
+    held-out pages; `all` keeps the most and sends about twice as many.
+
+    Whether the default repays its cost depends on the documents. On held-out enterprise
+    documents, dropping it lost 2.5 points of what was kept while sending 8 points fewer pages
+    to a vision model. On questions about plainly laid out company filings it sent 42% of the
+    pages to a vision model and answered no more than the text layer, so `none` suits those.
     """
 
     @model_validator(mode="before")

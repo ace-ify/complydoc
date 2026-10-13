@@ -70,11 +70,11 @@ routing:
   # poorly, and the plan says so.
   min_ocr_dpi: 200
   min_ocr_confidence: 75
-  # Which pages go to a vision model for their tables. none: tables are read as
-  # text, which costs nothing. complex: a ruled table with merged or stacked header
-  # cells. broken: one whose rows do not survive in the text layer. all: every ruled
-  # table, when the table's structure matters.
-  vision_for_tables: none
+  # Which pages go to a vision model for their tables. complex: a ruled table with
+  # merged or stacked header cells. broken: one whose rows do not survive in the text
+  # layer. all: every ruled table, when the table's structure matters. none: tables
+  # are read as text.
+  vision_for_tables: complex
   # With --verify: the share of what a vision model read off a page that the kept
   # reading must also hold, for the two to agree. Measured by word, in any order,
   # because a vision model lays a page out its own way.
