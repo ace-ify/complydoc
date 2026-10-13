@@ -42,6 +42,8 @@ export default defineConfig({
             "guides/inspect-a-loader",
             "guides/compare-loaders",
             "guides/inspect-chunks",
+            "guides/evals",
+            "guides/find-a-value",
             "guides/replace-langchain-community",
           ],
         },

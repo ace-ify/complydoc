@@ -7,6 +7,20 @@ separately.
 
 ## Unreleased
 
+### Added
+
+- Evals on your own documents. Select a passage in the viewer's document view and press
+  "Expect this passage", or write passages in `.complydoc-evals.yaml` at the top of the
+  folder. Each is checked against the text every reader returned: an audit scores its own
+  reader and any second one whose text it kept, `compare-loaders` scores every loader, and
+  the viewer's Evals page has the scoreboard and shows a lost passage beside the nearest
+  thing the reader did return. An audit prints a line per reader. The report JSON moves to
+  schema 24, adding `evals`. The "Evals on your own documents" guide has the rest.
+- `complydoc find` and the viewer's "Find a value" page say where an identifier went: every
+  document it was read from, every step of a recorded pipeline that still held it, and every
+  host it was sent to, across the runs in a folder. The value is hashed to search and is
+  written nowhere. `cd.find_value` does the same from Python.
+
 ### Fixed
 
 - "Table rows that survived" no longer counts a row as broken because the table reader merged
