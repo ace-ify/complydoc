@@ -205,6 +205,39 @@ def test_a_page_of_figures_is_text():
     assert route_of(page(text=figures, text_share=0.6))[0] == "text"
 
 
+def test_typeset_text_over_a_background_picture_is_text():
+    """A designed report: a full-page image behind hundreds of words. From annual reports."""
+    prose = "Tangible assets are stated at cost, less accumulated depreciation. " * 20
+    designed = page(text=prose, text_share=0.2, image_share=1.0, dpi=96)
+    designed.invisible_text_share = 0.0
+    route, reason = route_of(designed)
+    assert route == "text"
+    assert "text layer" in reason
+
+
+def test_an_ocr_layer_over_a_scan_still_goes_to_vision():
+    """The same geometry, but the text is drawn invisibly: a machine's reading of the picture."""
+    prose = "Tangible assets are stated at cost, less accumulated depreciation. " * 20
+    scan = page(text=prose, text_share=0.2, image_share=1.0, dpi=200)
+    scan.invisible_text_share = 1.0
+    assert route_of(scan)[0] == "vision"
+
+
+def test_a_caption_on_a_picture_still_goes_to_vision():
+    captioned = page(
+        text="Figure 3. Installed capacity by technology, 2025.", text_share=0.05, image_share=0.9
+    )
+    captioned.invisible_text_share = 0.0
+    route, reason = route_of(captioned)
+    assert route == "vision"
+    assert "mostly picture" in reason
+
+
+def test_the_picture_rule_stands_when_how_the_text_is_drawn_is_unknown():
+    prose = "Tangible assets are stated at cost, less accumulated depreciation. " * 20
+    assert route_of(page(text=prose, text_share=0.2, image_share=1.0, dpi=96))[0] == "vision"
+
+
 def test_a_table_of_contents_is_text():
     """Dot leaders are punctuation, not noise. Found on four books, where they went to vision."""
     line = "1.2 Historical Development and Key Milestones " + ". " * 40 + "6\r\n"

@@ -186,6 +186,14 @@ class Page:
     """The engine's mean confidence in what it read, 0 to 1. None if it did not run."""
     ocr_seconds: float | None = None
     """How long OCR took on this page, on the machine that ran it. None if it did not run."""
+    invisible_text_share: float | None = None
+    """Share of the page's text objects that are drawn invisibly, 0 to 1.
+
+    An OCR layer laid over a scan is drawn with the render mode that paints nothing, so a
+    share near 1 means the text is a machine's reading of the picture, and a share near 0
+    means the text was typeset. None when it was not measured, which is whenever pdfium was
+    not given the page.
+    """
     raw_chars: str = ""
     """Page characters as stored, before any unicode normalisation.
 

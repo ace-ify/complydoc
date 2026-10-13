@@ -65,6 +65,7 @@ routing:
   min_characters: 40
   min_text_coverage_pct: 30
   picture_share_pct: 50
+  max_caption_chars: 500
   max_control_char_pct: 2
   min_wordlike_pct: 50
   vision_for_tables: complex

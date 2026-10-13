@@ -355,6 +355,32 @@ def _aligned_tables(plumber_page: Any, words: list[Any], text: str = "") -> list
     return found
 
 
+_INVISIBLE = 3
+"""The PDF text render mode that paints nothing."""
+
+
+def _invisible_text_share(native: Any) -> float | None:
+    """Share of a pdfium page's text objects drawn invisibly, or None when it cannot be told."""
+    if native is None:
+        return None
+    try:
+        import pypdfium2.raw as raw
+
+        objects = native.get_objects(filter=[raw.FPDF_PAGEOBJ_TEXT], max_depth=6)
+        modes = [raw.FPDFTextObj_GetTextRenderMode(found.raw) for found in objects]
+    except Exception:
+        return None
+    return sum(mode == _INVISIBLE for mode in modes) / len(modes) if modes else None
+
+
+def _close(native: Any) -> None:
+    """Close a pdfium document or page, which also closes what was opened from it."""
+    if native is None:
+        return
+    with contextlib.suppress(Exception):
+        native.close()
+
+
 def _wants_pdfium(options: IngestOptions) -> bool:
     """Whether any extractor asked for reads through pdfium."""
     from complydoc.ingest.extractors.registry import extractor_by_id
@@ -501,6 +527,11 @@ class PdfLoader:
                 # has been copied into `page` by now, and a worker holding one
                 # document at a time keeps memory bounded per worker.
                 _release(plumber_page)
+                # The same holds for pdfium: an open page keeps its parsed content and
+                # its text page until it is closed. Left open, four annual reports
+                # used two thirds more memory than with pdfplumber alone.
+                _close(native)
+        _close(pdfium_doc)
 
         rasters = _render_pages(path, password, needs_raster, options.render_dpi)
         for index, image in rasters.items():
@@ -596,6 +627,7 @@ class PdfLoader:
             number=index + 1,
         )
         kept = self._extract(page, source, width, height, options)
+        page.invisible_text_share = _invisible_text_share(pdfium_page)
         page.text = kept.text
         page.text_source = "native" if page.text.strip() else "none"
         page.text_blocks.extend(kept.blocks)

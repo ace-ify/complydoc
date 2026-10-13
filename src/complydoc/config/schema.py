@@ -358,6 +358,13 @@ class RoutingConfig(_Base):
     """Coverage below which a page that is mostly picture reads as a caption."""
     picture_share_pct: float = 50.0
     """Image coverage at which a page counts as a picture rather than a page with pictures."""
+    max_caption_chars: int = 500
+    """Typeset text at or above this length is a page of text over a background picture.
+
+    A page that is mostly picture goes to a vision model when its text is an OCR layer, which
+    is drawn invisibly, or is shorter than this. A designed page, with a full-page image
+    behind several hundred words, is read from its text layer.
+    """
     max_control_char_pct: float = 2.0
     """Share of control or unmapped characters above which a text layer is not text."""
     min_wordlike_pct: float = 50.0

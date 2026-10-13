@@ -169,6 +169,18 @@ def _not_text(page: Page, settings: RoutingConfig) -> str | None:
     return None
 
 
+def _typeset_over_a_background(page: Page, settings: RoutingConfig) -> bool:
+    """Whether a page that is mostly picture is a page of typeset text with a picture behind it.
+
+    Two things say so: the text is drawn, where an OCR layer over a scan is invisible, and
+    there is more of it than a caption. Annual reports are laid out this way, and their pages
+    were going to a vision model. When the page does not say how its text is drawn, the
+    picture rule stands.
+    """
+    hidden = page.invisible_text_share
+    return hidden is not None and hidden < 0.5 and len(page.text) >= settings.max_caption_chars
+
+
 def _page_route(page: Page, settings: RoutingConfig) -> tuple[str, str]:
     readable = page.text_source in ("native", "loader") and len(page.text.strip()) >= (
         settings.min_characters
@@ -187,7 +199,11 @@ def _page_route(page: Page, settings: RoutingConfig) -> tuple[str, str]:
         table = _table_needs_vision(page, settings.vision_for_tables)
         if table is not None:
             return "vision", table
-        if mostly_picture and text_share * 100 < settings.min_text_coverage_pct:
+        if (
+            mostly_picture
+            and text_share * 100 < settings.min_text_coverage_pct
+            and not _typeset_over_a_background(page, settings)
+        ):
             return (
                 "vision",
                 f"mostly picture ({image_share * 100:.0f}% of the page) with "

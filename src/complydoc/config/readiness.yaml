@@ -59,6 +59,9 @@ routing:
   # an image, not a page of text.
   min_text_coverage_pct: 30
   picture_share_pct: 50
+  # Unless its text is typeset and at least this long: then it is a page of text
+  # with a picture behind it, as in a designed report, and is read as text.
+  max_caption_chars: 500
   # A text layer is not text when its font does not map to characters, or when it
   # is an embedded OCR layer that read noise.
   max_control_char_pct: 2

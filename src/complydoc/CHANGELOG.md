@@ -5,6 +5,18 @@ way of using complydoc, such as a command, or for a breaking change to the repor
 a config key, which the release then says. `schema_version` in the JSON is versioned
 separately.
 
+## [Unreleased]
+
+### Fixed
+
+- A page of typeset text with a picture behind it is read from its text layer. Designed
+  reports put a full-page background image on every page, and such pages went to a vision
+  model as "mostly picture": 110 of the 1,379 pages of four annual reports. A page that is
+  mostly picture still goes to a vision model when its text is an OCR layer, which is drawn
+  invisibly, or is shorter than `routing.max_caption_chars` (500). On two public parsing
+  benchmarks the change costs under a tenth of a point of what is kept.
+- pdfium pages are closed as soon as they are read.
+
 ## [0.7.1] — 2026-10-12
 
 How a PDF is read and where each page is sent now follow what was measured on two public
