@@ -5,6 +5,17 @@ way of using complydoc, such as a command, or for a breaking change to the repor
 a config key, which the release then says. `schema_version` in the JSON is versioned
 separately.
 
+## Unreleased
+
+### Fixed
+
+- Very small text that is drawn is no longer reported as hidden. A glyph a pixel or two tall
+  leaves too little ink at the resolution the page is checked at, so parts of the page
+  thumbnails in a paper's figure came out as text "a reader does not see". Small glyphs that
+  look blank are now drawn again four times larger before they are called hidden; small text
+  with nothing drawn under it is reported as before
+  ([#5](https://github.com/complydoc/complydoc/issues/5)).
+
 ## [0.7.3] — 2026-10-13
 
 Identifier detection reported far too much that was not an identifier, on research papers
