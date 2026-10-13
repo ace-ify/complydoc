@@ -14,8 +14,9 @@ A row counts as intact when its non-empty cells appear on one line of the text,
 in the order the grid has them. A grid row whose cells each stack the same number
 of lines is several rows the extractor merged, and each is compared on its own.
 
-Broken tables are a common cause of wrong answers downstream, and this is the cheapest honest measurement of it: the grid comes from
-the extractor that found the table, and the text is the one the run kept.
+Broken tables are a common cause of wrong answers downstream, and this is the
+cheapest honest measurement of it: the grid comes from the extractor that found
+the table, and the text is the one the run kept.
 
 Both come from the same extractor, because only an extractor that reads table
 structure detects a table at all. So this measures how well that extractor's own
