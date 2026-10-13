@@ -3,7 +3,14 @@ import { spawn } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-const CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+import { existsSync } from "node:fs";
+// Chrome where it usually is on a Mac or on Linux, or wherever CHROME says.
+const CHROME =
+  process.env.CHROME ??
+  ["/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", "/usr/bin/google-chrome", "/usr/bin/chromium"].find(
+    (path) => existsSync(path),
+  );
+if (!CHROME) throw new Error("No Chrome found; set CHROME to its path.");
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 export async function open(width, height, scale = 1) {
   const profile = mkdtempSync(join(tmpdir(), "complydoc-drive-"));

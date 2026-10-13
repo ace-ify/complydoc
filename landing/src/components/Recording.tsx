@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
 import { useInView } from "@/hooks/useInView";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { cn } from "@/lib/utils";
@@ -19,13 +19,27 @@ interface RecordingProps {
 }
 
 /**
- * A recording of the viewer, in a hairline frame, in the theme the reader has. It loads
+ * A recording of the viewer, in a hairline frame, in the theme the page is showing. It loads
  * and plays once it comes on screen, loops without sound, and stays a still picture for
  * a reader who asked for less motion.
  */
+/** Whether the page is showing its dark theme now, kept current as the reader switches. */
+function useDark(): boolean {
+  return useSyncExternalStore(
+    (onChange) => {
+      const observer = new MutationObserver(onChange);
+      observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+      return () => observer.disconnect();
+    },
+    () => document.documentElement.classList.contains("dark"),
+    () => false,
+  );
+}
+
 export function Recording({ video, poster, label, className }: RecordingProps) {
   const [ref, seen] = useInView<HTMLDivElement>();
   const still = useMediaQuery("(prefers-reduced-motion: reduce)");
+  const theme = useDark() ? "dark" : "light";
   return (
     <div
       ref={ref}
@@ -33,19 +47,16 @@ export function Recording({ video, poster, label, className }: RecordingProps) {
       aria-label={label}
       className={cn("aspect-[16/10] overflow-hidden rounded-xl border bg-card shadow-sm", className)}
     >
-      <Clip video={video.light} poster={poster.light} play={seen && !still} className="dark:hidden" />
-      <Clip video={video.dark} poster={poster.dark} play={seen && !still} className="hidden dark:block" />
+      {/* One clip, for the theme showing: the other is never fetched. Keyed, so a switch of theme starts the new one. */}
+      <Clip key={theme} video={video[theme]} poster={poster[theme]} play={seen && !still} />
     </div>
   );
 }
 
-function Clip({ video, poster, play, className }: { video: string; poster: string; play: boolean; className: string }) {
+function Clip({ video, poster, play }: { video: string; poster: string; play: boolean }) {
   const element = useRef<HTMLVideoElement>(null);
-  // A hidden clip is neither fetched nor played: each reader loads the one for their theme.
   useEffect(() => {
-    const clip = element.current;
-    if (!clip || !play || clip.offsetParent === null) return;
-    void clip.play().catch(() => undefined);
+    if (play) void element.current?.play().catch(() => undefined);
   }, [play]);
   return (
     <video
@@ -57,7 +68,7 @@ function Clip({ video, poster, play, className }: { video: string; poster: strin
       playsInline
       preload="none"
       aria-hidden
-      className={cn("size-full object-cover", className)}
+      className="size-full object-cover"
     />
   );
 }
