@@ -17,7 +17,7 @@ npm run build    # static files in dist/
 
 | Section | Says |
 | --- | --- |
-| Hero | What complydoc is in a sentence, the install command, the command for a coding agent, and a trace |
+| Hero | What complydoc is in a sentence, the install command, the command for a coding agent, and a recording of a trace being opened |
 | What to know first | Runs on your machine, network blocked, no account, MIT, and the loaders it works with |
 | Quickstart | Install, wrap a pipeline in `cd.observe`, open the viewer |
 | Features | One row a feature, text beside the thing itself: read, compare, expect, follow, protect, route |
@@ -32,8 +32,7 @@ Nothing on the page is invented.
 
 | On the page | From |
 | --- | --- |
-| The screenshots in `src/assets/screens` | The viewer with its sidebar folded, captured by `scripts/recordings/shots.mjs`: the trace as a whole window, the others as one whole panel each. The trace and Find a value are from the bundled sample documents, observed twice with and without masking; the reading is `employee-record.pdf`; the diff and the Security panels are from `viewer/sample/documents` read with complydoc's reader and pypdf |
-| The evals recording in `src/assets/recordings` | The viewer on the bundled sample documents, driven by `scripts/recordings/expect.mjs` with a real mouse and rendered by `scripts/recordings/render.py`: three passages expected beforehand, a fourth selected in `terms-and-conditions.pdf` |
+| The recordings in `src/assets/recordings` | The viewer with its sidebar folded, driven with a real mouse by `scripts/recordings/scenes.mjs` (and `expect.mjs` for the evals one) and rendered by `scripts/recordings/render.py`. The trace, the reading, Find a value and the evals are on the bundled sample documents, observed twice with and without masking; the diff and the Security page are on `viewer/sample/documents`, read with complydoc's reader and pypdf. Each plays once it is on screen and stays a still picture for a reader who asked for less motion |
 | The page router and `src/data/routing.ts` | `complydoc routing ./documents` on `viewer/sample/documents`, the `complydoc-routing.json` it writes |
 | 98% of reported identifiers real | The changelog, 0.7.3: measured on 4,200 pages |
 | 53 of 53, 91.4% precision | `complydoc benchmark` |

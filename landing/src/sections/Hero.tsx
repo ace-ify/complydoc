@@ -1,8 +1,10 @@
 import { ArrowRightIcon } from "lucide-react";
-import traceDark from "@/assets/screens/trace-dark.webp";
-import traceLight from "@/assets/screens/trace-light.webp";
+import traceDarkPoster from "@/assets/recordings/trace-dark.webp";
+import traceDark from "@/assets/recordings/trace-dark.mp4";
+import traceLightPoster from "@/assets/recordings/trace-light.webp";
+import traceLight from "@/assets/recordings/trace-light.mp4";
 import { CopyButton } from "@/components/CopyButton";
-import { Screenshot } from "@/components/Screenshot";
+import { Recording } from "@/components/Recording";
 import { Button } from "@/components/ui/button";
 import { ButtonGroup, ButtonGroupText } from "@/components/ui/button-group";
 import { links } from "@/links";
@@ -44,9 +46,10 @@ export function Hero() {
             <CopyButton text={SKILL} label="Copy the skill command" variant="ghost" size="icon" />
           </p>
         </div>
-        <Screenshot
-          src={{ dark: traceDark, light: traceLight }}
-          alt="The viewer's trace of an ingestion pipeline: every call on a time axis with its time, cost and identifiers, a warning on a scanned file that loaded no text, and the embedding call's input"
+        <Recording
+          video={{ light: traceLight, dark: traceDark }}
+          poster={{ light: traceLightPoster, dark: traceDarkPoster }}
+          label="A recording of the viewer: a pipeline run opened from the list of traces, every call on a time axis, a scanned file that loaded no text, and the embedding call that sent text holding 19 identifiers to a host"
           className="w-full text-left"
         />
       </div>

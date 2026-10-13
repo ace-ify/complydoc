@@ -1,11 +1,19 @@
-import diffDark from "@/assets/screens/diff-dark.webp";
-import diffLight from "@/assets/screens/diff-light.webp";
-import documentDark from "@/assets/screens/document-dark.webp";
-import documentLight from "@/assets/screens/document-light.webp";
-import findDark from "@/assets/screens/find-dark.webp";
-import findLight from "@/assets/screens/find-light.webp";
-import securityDark from "@/assets/screens/security-dark.webp";
-import securityLight from "@/assets/screens/security-light.webp";
+import diffDarkPoster from "@/assets/recordings/diff-dark.webp";
+import diffDark from "@/assets/recordings/diff-dark.mp4";
+import diffLightPoster from "@/assets/recordings/diff-light.webp";
+import diffLight from "@/assets/recordings/diff-light.mp4";
+import findDarkPoster from "@/assets/recordings/find-dark.webp";
+import findDark from "@/assets/recordings/find-dark.mp4";
+import findLightPoster from "@/assets/recordings/find-light.webp";
+import findLight from "@/assets/recordings/find-light.mp4";
+import protectDarkPoster from "@/assets/recordings/protect-dark.webp";
+import protectDark from "@/assets/recordings/protect-dark.mp4";
+import protectLightPoster from "@/assets/recordings/protect-light.webp";
+import protectLight from "@/assets/recordings/protect-light.mp4";
+import readDarkPoster from "@/assets/recordings/read-dark.webp";
+import readDark from "@/assets/recordings/read-dark.mp4";
+import readLightPoster from "@/assets/recordings/read-light.webp";
+import readLight from "@/assets/recordings/read-light.mp4";
 import expectDarkPoster from "@/assets/recordings/expect-dark.webp";
 import expectDark from "@/assets/recordings/expect-dark.mp4";
 import expectLightPoster from "@/assets/recordings/expect-light.webp";
@@ -13,7 +21,6 @@ import expectLight from "@/assets/recordings/expect-light.mp4";
 import { FeatureRow } from "@/components/FeatureRow";
 import { Recording } from "@/components/Recording";
 import { RouteLegend, RouteMap } from "@/components/RouteMap";
-import { Screenshot } from "@/components/Screenshot";
 import { Section } from "@/components/Section";
 import { ROUTED_DOCUMENTS, ROUTING_COST_USD, ROUTING_MODEL } from "@/data/routing";
 import { links } from "@/links";
@@ -39,10 +46,10 @@ export function Features() {
           ]}
           more={{ label: "The viewer", href: links.viewerGuide }}
           visual={
-            <Screenshot
-              src={{ dark: documentDark, light: documentLight }}
-              ratio={1856 / 1168}
-              alt="The viewer's reading of an employee record: numbered lines, two chunks drawn over the text, and each identifier masked and underlined where it sits"
+            <Recording
+              video={{ light: readLight, dark: readDark }}
+              poster={{ light: readLightPoster, dark: readDarkPoster }}
+              label="A recording of the viewer: a one-page employee record opened as text, a splitter chosen, its two chunks drawn over the lines, and each identifier masked and underlined where it sits"
             />
           }
         >
@@ -61,10 +68,10 @@ export function Features() {
           ]}
           more={{ label: "Comparing loaders", href: links.compareLoaders }}
           visual={
-            <Screenshot
-              src={{ dark: diffDark, light: diffLight }}
-              ratio={1856 / 1264}
-              alt="The viewer's diff of two readers on an employee handbook: one line of a contact table differs, and the word the second reader moved is marked"
+            <Recording
+              video={{ light: diffLight, dark: diffDark }}
+              poster={{ light: diffLightPoster, dark: diffDarkPoster }}
+              label="A recording of the viewer: the diff of two readers on an employee handbook, the camera closing in on the one line that differs and the word the second reader moved"
             />
           }
         >
@@ -104,10 +111,10 @@ export function Features() {
           ]}
           more={{ label: "Find where a value went", href: links.findValue }}
           visual={
-            <Screenshot
-              src={{ dark: findDark, light: findLight }}
-              ratio={2216 / 1616}
-              alt="The viewer's Find a value page: an account number found in three runs, stopped by a masking step in one pipeline run and sent to a host in the other"
+            <Recording
+              video={{ light: findLight, dark: findDark }}
+              poster={{ light: findLightPoster, dark: findDarkPoster }}
+              label="A recording of the viewer: an account number typed into Find a value, found in three runs, stopped by a masking step in one pipeline run and sent to a host in the other"
             />
           }
         >
@@ -126,10 +133,10 @@ export function Features() {
           ]}
           more={{ label: "Identifiers it finds", href: links.identifiers }}
           visual={
-            <Screenshot
-              src={{ dark: securityDark, light: securityLight }}
-              ratio={1856 / 2018}
-              alt="The viewer's Security page: counts by severity, one hidden instruction, and the identifiers found by kind, by document and by how sure the finding is"
+            <Recording
+              video={{ light: protectLight, dark: protectDark }}
+              poster={{ light: protectLightPoster, dark: protectDarkPoster }}
+              label="A recording of the viewer's Security page: counts by severity and one hidden instruction, then the identifiers found by kind and by document"
             />
           }
         >
