@@ -5,6 +5,16 @@ way of using complydoc, such as a command, or for a breaking change to the repor
 a config key, which the release then says. `schema_version` in the JSON is versioned
 separately.
 
+## Unreleased
+
+### Fixed
+
+- "Table rows that survived" no longer counts a row as broken because the table reader merged
+  it with its neighbours. A table with no lines between its rows can come back as one row
+  whose cells each hold every row's value, a line apiece, and that never matched a line of the
+  page. Each of those lines is now compared as the row it is
+  ([#6](https://github.com/complydoc/complydoc/issues/6)).
+
 ## [0.7.3] — 2026-10-13
 
 Identifier detection reported far too much that was not an identifier, on research papers
