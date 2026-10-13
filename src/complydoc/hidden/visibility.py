@@ -11,8 +11,9 @@ same words. There is ink under it there, so it is not reported. A reason read
 from the file raises a passage from suspected to confirmed only once the page
 shows nothing where it is.
 
-Text outside the page's crop box and text below the minimum font size are
-hidden whatever the pixels show.
+Text outside the page's crop box and text drawn below the minimum font size are
+hidden whatever the pixels show. A file can scale text down from any font size,
+so a letter drawn smaller than that font's letters would be counts too.
 
 A glyph a pixel or two tall leaves too little ink at the page's resolution to
 tell from none, so small glyphs that look blank are drawn again, larger, before
@@ -46,6 +47,12 @@ glyph. Splitting on each of those would report one sentence as several.
 
 _SMALL_GLYPH_PX = 4
 """Height in pixels below which a glyph that looks blank is drawn again, larger."""
+_TALLEST_LETTER = 0.5
+"""Share of a font's size its tallest letters are sure to reach.
+
+Capitals stand about seven tenths of the size tall and the smallest letters about
+half, so text whose tallest letter is under half the minimum is under the minimum.
+"""
 _CLOSER_SCALE = 4
 """How many times larger the second drawing is."""
 _CLOSER_MAX_PIXELS = 16_000_000
@@ -143,6 +150,7 @@ def _page_runs(page: Any, number: int, config: VisibilityConfig) -> list[HiddenR
         white = int(config.near_white * 255)
         r, g, b, a = (ctypes.c_uint() for _ in range(4))
 
+        tallest = _tallest_letters(raw, textpage, count)
         glyphs: list[Glyph] = []
         doubtful: dict[int, tuple[float, float, float, float]] = {}
         for i in range(count):
@@ -161,14 +169,17 @@ def _page_runs(page: Any, number: int, config: VisibilityConfig) -> list[HiddenR
                 reasons.append(_OUTSIDE)
                 confirming = True
 
+            text_object = raw.FPDFText_GetTextObject(textpage.raw, i)
+            drawn = tallest.get(ctypes.addressof(text_object.contents)) if text_object else None
             size = raw.FPDFText_GetFontSize(textpage.raw, i)
-            tiny = 0 < size < config.min_font_size_pt
+            tiny = 0 < size < config.min_font_size_pt or (
+                drawn is not None and 0 < drawn < _TALLEST_LETTER * config.min_font_size_pt
+            )
             if tiny:
                 reasons.append(f"font size below {config.min_font_size_pt:g}pt")
                 confirming = True
 
             explained: list[str] = []
-            text_object = raw.FPDFText_GetTextObject(textpage.raw, i)
             mode = raw.FPDFTextObj_GetTextRenderMode(text_object) if text_object else -1
             if mode in _INVISIBLE_MODES:
                 explained.append(_INVISIBLE_MODES[mode])
@@ -219,6 +230,29 @@ def _page_runs(page: Any, number: int, config: VisibilityConfig) -> list[HiddenR
 
 
 _OUTSIDE = "outside the visible page area"
+
+
+def _tallest_letters(raw: Any, textpage: Any, count: int) -> dict[int, float]:
+    """The largest letter or digit drawn by each text object, in points.
+
+    A file can set a font at 12pt and scale the text down to a hundredth of that, so
+    the font's own size says little, and neither does the text's scale: some fonts
+    carry their size in the glyphs. The glyph's box is what was drawn. One letter
+    says little either, since an "e" is half the height of an "E", so the tallest
+    in the text object stands for all of it.
+    """
+    tallest: dict[int, float] = {}
+    for i in range(count):
+        code = raw.FPDFText_GetUnicode(textpage.raw, i)
+        if not (0 < code < 0x110000 and chr(code).isalnum()):
+            continue
+        text_object = raw.FPDFText_GetTextObject(textpage.raw, i)
+        if not text_object:
+            continue
+        x0, y0, x1, y1 = textpage.get_charbox(i)
+        key = ctypes.addressof(text_object.contents)
+        tallest[key] = max(tallest.get(key, 0.0), x1 - x0, y1 - y0)
+    return tallest
 
 
 def _drawn_after_all(
