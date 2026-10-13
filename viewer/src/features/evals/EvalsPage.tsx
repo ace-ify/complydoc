@@ -15,7 +15,7 @@ import { Scoreboard } from "./Scoreboard";
  * Evals on your own documents: the passages a reading of this folder must contain, and how
  * each reading did. An audit scores its own reader; a loader comparison scores every loader
  * side by side. The passages are kept in a file beside the documents, which `complydoc ui`
- * can add to. A prototype.
+ * can add to.
  */
 export function EvalsPage({ report }: { report: Report }) {
   const state = useEvalsState();

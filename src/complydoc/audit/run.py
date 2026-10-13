@@ -445,19 +445,17 @@ def _evals(target: Path, report: AuditReport, extracted_text: bool) -> EvalSumma
     None without the file. With it but without the text kept, the file is named and
     nothing is checked, since there is nothing to check it against.
     """
-    from complydoc.evals import find_evals_file, load_evals
+    from complydoc.evals import find_evals_file, load_evals, readings_of
     from complydoc.extraction.facts import evaluate_facts
 
     file = find_evals_file(target)
     if file is None:
         return None
-    reader = report.run.extractor
     if not extracted_text:
-        return EvalSummary(str(file), [reader], [])
+        return EvalSummary(str(file), [report.run.extractor], [])
+    readings = readings_of(report)
     return EvalSummary(
-        str(file),
-        [reader],
-        evaluate_facts({reader: report.documents}, load_evals(file).as_facts()),
+        str(file), list(readings), evaluate_facts(readings, load_evals(file).as_facts())
     )
 
 

@@ -33,7 +33,7 @@ function Summary({ trail }: { trail: Trail }) {
  * Where a value went. Type an identifier as it is written; the server hashes it and searches
  * every report it serves for the hash, so the answer comes from reports that never held the
  * value, and the value is kept nowhere. Each run that held it is listed with its steps, as the
- * trace lists them, down to the one after which it was gone. A prototype.
+ * trace lists them, down to the one after which it was gone.
  */
 export function FindPage() {
   const [served] = useState(() => localConfig() !== null);

@@ -1,4 +1,4 @@
-"""`find`: where a value went, across the reports in a folder. A prototype."""
+"""`find`: where a value went, across the reports in a folder."""
 
 from __future__ import annotations
 
@@ -35,7 +35,7 @@ def find(
     ] = None,
     print_json: Annotated[bool, typer.Option("--json", help="Print the result as JSON.")] = False,
 ) -> None:
-    """Find every document, pipeline step and host a value reached. A prototype.
+    """Find every document, pipeline step and host a value reached.
 
     Reports hold a fingerprint of each identifier they found, never the value. The
     value you give is hashed the same way and the reports are searched for it, so it

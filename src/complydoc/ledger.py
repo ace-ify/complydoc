@@ -12,7 +12,7 @@ reports that never held the value, and the value asked about is not written anyw
 A fingerprint is not a secret: a value with few possibilities can be recovered from one
 by trying them all. See `complydoc.fingerprint`.
 
-This is a prototype. It reads the reports in a folder, on this machine.
+It reads the reports in a folder, on this machine.
 """
 
 from __future__ import annotations
@@ -149,6 +149,11 @@ def _step_sightings(trace: dict[str, Any], wanted: set[str]) -> list[StepSightin
     return steps
 
 
+def _folder(target: Any) -> str:
+    """The folder a run read, by its own name: where it sits on a disk is not its name."""
+    return Path(str(target)).name if target else ""
+
+
 def _in_report(data: dict[str, Any], name: str, wanted: set[str]) -> tuple[RunSighting, Any] | None:
     documents: list[DocumentSighting] = []
     described: Any = None
@@ -180,7 +185,7 @@ def _in_report(data: dict[str, Any], name: str, wanted: set[str]) -> tuple[RunSi
     run = data.get("run") or {}
     sighting = RunSighting(
         report=name,
-        name=str((trace.get("name") if pipeline else None) or run.get("target") or name),
+        name=str((trace.get("name") if pipeline else None) or _folder(run.get("target")) or name),
         kind="pipeline" if pipeline else "audit",
         started_at=str(run.get("started_at") or ""),
         commit=((run.get("context") or {}).get("commit") or None),

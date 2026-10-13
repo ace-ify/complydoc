@@ -365,6 +365,30 @@ def print_written(json_path: Path, out: Path) -> None:
     console.print(f"[bold]View[/]    {escape(viewer)}", no_wrap=True, crop=False)
 
 
+def print_evals(report: AuditReport) -> None:
+    """How each reader did on the passages the folder's evals file expects, in a line each."""
+    evals = report.evals
+    if evals is None:
+        return
+    if not evals.checks:
+        console.print(
+            f"[bold]Evals[/]   {escape(Path(evals.file).name)} was not checked: "
+            "this run kept no text. Add --extracted-text."
+        )
+        return
+    total = len(evals.checks)
+    for reader in evals.readers:
+        kept = sum(1 for check in evals.checks if check.found.get(reader) == "exact")
+        near = sum(1 for check in evals.checks if check.found.get(reader) == "fuzzy")
+        lost = total - kept - near
+        parts = [f"{kept} of {total} expected passages kept"]
+        if near:
+            parts.append(f"{near} nearly")
+        if lost:
+            parts.append(f"[red]{lost} lost[/]")
+        console.print(f"[bold]Evals[/]   {escape(reader)}: {', '.join(parts)}")
+
+
 def emit(
     report: AuditReport,
     out: Path,
@@ -413,6 +437,7 @@ def emit(
     if quiet:
         return
     console.print()
+    print_evals(report)
     print_written(json_path, out)
     if save_text is not None:
         folder = save_text.expanduser().resolve()

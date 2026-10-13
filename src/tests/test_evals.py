@@ -93,6 +93,33 @@ def test_an_audit_checks_the_folders_evals_against_its_own_reading(folder: Path,
     assert "Invoices are payable" in clause["nearest"][reader]
 
 
+def test_an_audit_scores_every_reader_it_kept_the_text_of(folder: Path):
+    """Read a second way with the text kept, the folder's facts are scored on both readers."""
+    import complydoc as cd
+
+    add_fact(
+        folder / EVALS_FILENAME, ExpectedFact(text="Terms and conditions", document="terms.pdf")
+    )
+    report = cd.full_audit(folder, compare_extractors=["pypdf"], extracted_text=True, ocr=False)
+    assert report.evals is not None
+    assert report.evals.readers == [report.run.extractor, "pypdf"]
+    (check,) = report.evals.checks
+    assert set(check.found) == set(report.evals.readers)
+
+
+def test_an_audit_says_in_the_terminal_how_the_reader_did(folder: Path, tmp_path: Path):
+    add_fact(
+        folder / EVALS_FILENAME, ExpectedFact(text="Terms and conditions", document="terms.pdf")
+    )
+    add_fact(folder / EVALS_FILENAME, ExpectedFact(text="Payment is due within ninety days"))
+    said = runner.invoke(app, ["audit", str(folder), "--out", str(tmp_path / "a"), "--no-ocr"])
+    assert "1 of 2 expected passages kept, 1 lost" in " ".join(said.output.split())
+    bare = runner.invoke(
+        app, ["audit", str(folder), "--out", str(tmp_path / "b"), "--no-ocr", "--no-extracted-text"]
+    )
+    assert "was not checked" in " ".join(bare.output.split())
+
+
 def test_a_folder_with_no_evals_file_has_none(folder: Path, tmp_path: Path):
     out = tmp_path / "out"
     assert (

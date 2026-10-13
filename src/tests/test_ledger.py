@@ -136,7 +136,7 @@ def test_a_value_is_found_however_it_is_written(reports: Path, typed: str):
 def test_the_trail_says_which_pages_which_steps_and_which_hosts(reports: Path):
     masked, sent, audit = find_value(IBAN, reports).runs
 
-    assert audit.kind == "audit" and audit.name == "/work/contracts"
+    assert audit.kind == "audit" and audit.name == "contracts"
     (document,) = audit.documents
     assert (document.path, document.pages, document.occurrences) == ("msa.pdf", [3, 7], 2)
     assert audit.steps == [] and audit.reached is None and audit.sent_to == []

@@ -1,4 +1,4 @@
-/** Where a value went, as `complydoc ui` answers it: every run that held it. A prototype. */
+/** Where a value went, as `complydoc ui` answers it: every run that held it. */
 export interface Trail {
   found: boolean;
   /** What kind of identifier it was found as, such as "IBAN". */

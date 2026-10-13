@@ -16,6 +16,7 @@ import {
   SidebarRail,
   SidebarSeparator,
 } from "@/components/ui/sidebar";
+import { useEvalsState } from "@/hooks/useEvals";
 import { FolderRunsContext } from "@/hooks/useFolderRuns";
 import { cn } from "@/lib/utils";
 import { guideFor } from "@/report/docs";
@@ -113,6 +114,7 @@ function readFolded(): boolean {
  */
 export function AppSidebar({ report, page, switcher, search }: AppSidebarProps) {
   const { runs } = useContext(FolderRunsContext);
+  const expected = (useEvalsState().facts?.length ?? 0) > 0;
   const [missingOpen, setMissingOpen] = useState(readFolded);
   const toggleMissing = () => {
     const next = !missingOpen;
@@ -126,6 +128,8 @@ export function AppSidebar({ report, page, switcher, search }: AppSidebarProps) 
   const has = (id: Page) => {
     // Traces lists every run of the folder or pipeline, a way to the others from any one.
     if (id === "pipeline" && runs.length > 1) return true;
+    // Passages expected since the run are scored on the text it kept, so the page has them.
+    if (id === "evals" && expected) return true;
     const content = PAGE_CONTENT[id];
     return !report || content === undefined || measured(report, content);
   };

@@ -1,4 +1,4 @@
-"""Evals on your own documents: what a reading of them must contain. A prototype.
+"""Evals on your own documents: what a reading of them must contain.
 
     # .complydoc-evals.yaml
     schema_version: 1
@@ -42,6 +42,7 @@ __all__ = [
     "add_fact",
     "find_evals_file",
     "load_evals",
+    "readings_of",
     "remove_fact",
     "score_report",
 ]
@@ -156,10 +157,15 @@ def remove_fact(path: Path, text: str, document: str | None = None) -> bool:
 
 
 def _readers(report: AuditReport) -> list[str]:
-    """Whose readings a run holds: each loader it compared, or the one reader of an audit."""
+    """Whose readings a run holds: each loader it compared, or an audit's reader and any
+    second reader whose text it kept beside it."""
     if report.loader_comparison is not None:
         return [row.name for row in report.loader_comparison.loaders]
-    return [report.run.extractor]
+    kept = {
+        reader for d in report.documents for page in d.extracted_text for reader in page.readings
+    }
+    others = [r for r in report.run.compare_extractors if r in kept and r != report.run.extractor]
+    return [report.run.extractor, *others]
 
 
 def _as_read_by(document: DocumentReport, reader: str, only: bool) -> DocumentReport:
@@ -191,9 +197,16 @@ def score_report(report: AuditReport, file: Path) -> EvalSummary:
         raise EvalError(
             "This run kept no text to check against. Run it with the extracted text kept."
         )
+    readings = readings_of(report)
+    return EvalSummary(
+        str(file), list(readings), evaluate_facts(readings, load_evals(file).as_facts())
+    )
+
+
+def readings_of(report: AuditReport) -> dict[str, list[DocumentReport]]:
+    """The documents as each reader the run holds read them, from the text it kept."""
     readers = _readers(report)
-    readings = {
+    return {
         reader: [_as_read_by(d, reader, len(readers) == 1) for d in report.documents]
         for reader in readers
     }
-    return EvalSummary(str(file), readers, evaluate_facts(readings, load_evals(file).as_facts()))
