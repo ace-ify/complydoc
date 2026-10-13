@@ -41,6 +41,7 @@ const at = (label) => b.evaluate(`(() => { const e = [...document.querySelectorA
 const box = (expr) => b.evaluate(`(() => { const e = ${expr}; if (!e) return null; const r = e.getBoundingClientRect(); return [r.x, r.y, r.width, r.height]; })()`);
 try {
   // The document, in its Text view.
+  await b.goto(base, 1500); await b.evaluate(`localStorage.setItem("complydoc.sidebar", "closed")`);
   await b.goto(`${base}?run=complydoc.json&theme=${theme}#documents/7`, 4000);
   const tab = await at("Text"); await b.click(...tab); await sleep(1000);
   await b.evaluate(SPAN); await b.evaluate(CURSOR); await place(...mouse);

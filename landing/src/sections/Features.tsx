@@ -35,14 +35,14 @@ export function Features() {
           points={[
             "Every page as text, with numbered lines",
             "A splitter's chunks drawn over the text",
-            "Each finding opened on the line it sits in",
+            "Each identifier masked and marked where it sits",
           ]}
           more={{ label: "The viewer", href: links.viewerGuide }}
           visual={
             <Screenshot
               src={{ dark: documentDark, light: documentLight }}
-              zoom={{ scale: 1.55, origin: "42% 22%" }}
-              alt="The viewer's document view: every page with numbered lines, a splitter's chunks drawn over the text, and the findings listed beside it"
+              ratio={1856 / 1168}
+              alt="The viewer's reading of an employee record: numbered lines, two chunks drawn over the text, and each identifier masked and underlined where it sits"
             />
           }
         >
@@ -63,8 +63,8 @@ export function Features() {
           visual={
             <Screenshot
               src={{ dark: diffDark, light: diffLight }}
-              zoom={{ scale: 1.45, origin: "48% 25%" }}
-              alt="The viewer's diff of two readings of the same document, with added and lost lines marked"
+              ratio={1856 / 1264}
+              alt="The viewer's diff of two readers on an employee handbook: one line of a contact table differs, and the word the second reader moved is marked"
             />
           }
         >
@@ -106,8 +106,8 @@ export function Features() {
           visual={
             <Screenshot
               src={{ dark: findDark, light: findLight }}
-              zoom={{ scale: 1.25, origin: "100% 12%" }}
-              alt="The viewer's Find a value page: an account number found in three runs, stopped by a masking step in one pipeline run and sent to a host in another"
+              ratio={2216 / 1616}
+              alt="The viewer's Find a value page: an account number found in three runs, stopped by a masking step in one pipeline run and sent to a host in the other"
             />
           }
         >
@@ -128,8 +128,8 @@ export function Features() {
           visual={
             <Screenshot
               src={{ dark: securityDark, light: securityLight }}
-              zoom={{ scale: 1.35, origin: "62% 18%" }}
-              alt="The viewer's Security page: identifiers found by severity, kind and document, and hidden instructions"
+              ratio={1856 / 2018}
+              alt="The viewer's Security page: counts by severity, one hidden instruction, and the identifiers found by kind, by document and by how sure the finding is"
             />
           }
         >
