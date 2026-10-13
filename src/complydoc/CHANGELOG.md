@@ -5,13 +5,17 @@ way of using complydoc, such as a command, or for a breaking change to the repor
 a config key, which the release then says. `schema_version` in the JSON is versioned
 separately.
 
-## [Unreleased]
+## [0.7.2] — 2026-10-13
+
+Found by running 0.7.1 on four company annual reports: pages of typeset text over a background
+picture were being sent to a vision model, and rendering pages held far more memory than the
+pictures it kept. A routing plan for designed reports now sends fewer pages to vision.
 
 ### Fixed
 
 - A page of typeset text with a picture behind it is read from its text layer. Designed
   reports put a full-page background image on every page, and such pages went to a vision
-  model as "mostly picture": 110 of the 1,379 pages of four annual reports. A page that is
+  model as "mostly picture": 120 of the 1,379 pages of four annual reports. A page that is
   mostly picture still goes to a vision model when its text is an OCR layer, which is drawn
   invisibly, or is shorter than `routing.max_caption_chars` (500). On two public parsing
   benchmarks the change costs under a tenth of a point of what is kept.
