@@ -342,22 +342,65 @@ class OverallConfig(_Base):
 class RoutingConfig(_Base):
     """When a page needs OCR or a vision model instead of its own text layer.
 
-    The numbers match the readiness signals they come from, so a page the signals
-    call poor is a page routing sends somewhere more expensive.
+    The rules are the ones that kept the most on two public parsing benchmarks, measured
+    against the cheapest reader that loses nothing on each page.
     """
 
+    vision: bool = True
+    """Whether a vision model is available to send pages to.
+
+    Off, routing uses only what costs nothing: the text layer where there is one, and OCR
+    where there is not.
+    """
     min_characters: int = 40
     """Below this many characters, a page counts as having no text layer."""
     min_text_coverage_pct: float = 30.0
     """Coverage below which a page that is mostly picture reads as a caption."""
     picture_share_pct: float = 50.0
     """Image coverage at which a page counts as a picture rather than a page with pictures."""
+    max_caption_chars: int = 500
+    """Typeset text at or above this length is a page of text over a background picture.
+
+    A page that is mostly picture goes to a vision model when its text is an OCR layer, which
+    is drawn invisibly, or is shorter than this. A designed page, with a full-page image
+    behind several hundred words, is read from its text layer.
+    """
+    max_control_char_pct: float = 2.0
+    """Share of control or unmapped characters above which a text layer is not text."""
+    min_wordlike_pct: float = 50.0
+    """Share of tokens that must be a word, in any script, or a number for a layer to be text."""
     min_ocr_dpi: float = 200.0
-    """Scan resolution below which OCR is not worth running."""
+    """Scan resolution below which OCR reads poorly. Only used with `vision` off, to say so."""
     min_ocr_confidence: float = 75.0
-    """OCR confidence below which the recognised characters are not the page's."""
-    vision_for_complex_tables: bool = True
-    """Send a page with merged or stacked header cells to a vision model."""
+    """OCR confidence below which a reading is poor. Only used with `vision` off, to say so."""
+    vision_for_tables: Literal["all", "complex", "broken", "none"] = "complex"
+    """Which pages go to a vision model for their tables.
+
+    `complex`: a page with a ruled table that has merged or stacked header cells. `broken`: a
+    page with a ruled table whose rows do not survive in the text layer. `all`: every page with
+    a ruled table, for when the table's structure matters, since plain text cannot carry it.
+    `none`: tables are read as text.
+
+    On a public benchmark, the more table pages go to a vision model the more of the tables is
+    kept. `complex` and `broken` send a similar number of pages and could not be told apart on
+    held-out pages; `all` keeps the most and sends about twice as many.
+
+    Whether the default repays its cost depends on the documents. On held-out enterprise
+    documents, dropping it lost 2.5 points of what was kept while sending 8 points fewer pages
+    to a vision model. On questions about plainly laid out company filings it sent 42% of the
+    pages to a vision model and answered no more than the text layer, so `none` suits those.
+    """
+
+    @model_validator(mode="before")
+    @classmethod
+    def _old_table_setting(cls, values: Any) -> Any:
+        """Read `vision_for_complex_tables`, the setting this one replaced."""
+        if isinstance(values, dict) and "vision_for_complex_tables" in values:
+            values = dict(values)
+            wanted = values.pop("vision_for_complex_tables")
+            values.setdefault("vision_for_tables", "complex" if wanted else "none")
+        return values
+
     verify_min_coverage_pct: float = Field(default=90.0, ge=0.0, le=100.0)
     """Share of a vision reading's words the kept reading must hold for a page to agree.
 

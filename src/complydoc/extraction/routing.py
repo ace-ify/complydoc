@@ -1,31 +1,40 @@
 """Which extraction path each page needs: its text layer, OCR, or a vision model.
 
     plan = plan_routes(document, config.readiness.routing)
-    plan.counts  # {"text": 8, "ocr": 2, "vision": 1}
+    plan.counts  # {"text": 8, "ocr": 0, "vision": 3}
 
 Sending every page to a vision model reads anything and costs the most; reading
-the text layer costs the least and returns nothing for a scan. Most folders are a
-mix, and the mix is decided page by page:
+the text layer costs nothing and returns nothing for a scan. Most folders are a
+mix, and the mix is decided page by page.
+
+With a vision model available:
 
 | Route | When |
 | --- | --- |
 | `text` | A usable text layer, and nothing on the page that plain text loses |
-| `ocr` | No usable text layer, and a scan OCR can read |
-| `vision` | Plain text would lose the page |
+| `vision` | No usable text layer, or plain text would lose the page |
 
-A page takes the vision route when it carries a table with merged or stacked
-header cells, when it is mostly picture with a caption for a text layer, when it
-is a scan too coarse for OCR, or when OCR read it poorly.
+A page with a text layer takes the vision route when the layer is not text (a font
+with no usable mapping to characters, or an embedded OCR layer that read noise),
+when it carries a table with merged or stacked header cells, or when it is mostly
+picture with a caption for a text layer. A page with no text layer always does:
+on two public benchmarks OCR kept far less of such pages than a vision model.
+
+Without one (`vision: false`), routing uses only what costs nothing:
+
+| Route | When |
+| --- | --- |
+| `text` | A text layer, whatever its state: it kept more than OCR even when poor |
+| `ocr` | No usable text layer |
 
 Each page carries the reason for its route, so a plan can be argued with. The
 thresholds are the ones in `readiness.yaml`, under `routing`.
-
-Routes are decided while the document is open, because per-page tables, scan
-resolution and OCR confidence are not carried in the report.
 """
 
 from __future__ import annotations
 
+import re
+import unicodedata
 from dataclasses import dataclass, field
 
 from complydoc.config.schema import RoutingConfig
@@ -36,6 +45,9 @@ __all__ = ["ROUTES", "DocumentRouting", "PageRoute", "plan_routes"]
 
 ROUTES = ("text", "ocr", "vision")
 """Cheapest first."""
+
+_EDGE_PUNCTUATION = ".,;:!?()[]\"'"
+_NUMBER = re.compile(r"[\d][\d.,:/%\-]*")
 
 
 @dataclass(frozen=True, slots=True)
@@ -78,9 +90,95 @@ def _text_share(page: Page) -> float:
     return coverage_fraction([b.bbox for b in page.text_blocks], page.width_pt, page.height_pt)
 
 
-def _awkward_table(page: Page) -> bool:
-    """A table whose shape is the information: merged cells, or stacked headers."""
-    return any(table.merged_cells > 0 or table.header_depth > 1 for table in page.tables)
+def _table_needs_vision(page: Page, wanted: str) -> str | None:
+    """Why this page's tables need a vision model under the `wanted` setting, or None.
+
+    Only ruled tables count. A table found from how text is aligned is a guess, and on
+    pages set in columns it is often not a table at all.
+    """
+    ruled = [table for table in page.tables if table.detected_by == "lines"]
+    if wanted == "none" or not ruled:
+        return None
+    if wanted == "all":
+        return "a ruled table, whose structure plain text cannot carry"
+    if wanted == "complex":
+        if any(table.merged_cells > 0 or table.header_depth > 1 for table in ruled):
+            return "a table with merged or stacked header cells, which plain text loses"
+        return None
+    compared = sum(table.rows_compared or 0 for table in ruled)
+    intact = sum(table.rows_intact or 0 for table in ruled)
+    if compared and intact < compared:
+        return (
+            f"a table of which {intact} of {compared} rows survive in the text layer, "
+            "so plain text loses it"
+        )
+    return None
+
+
+def _control_share(text: str) -> float:
+    """Share of characters that are control codes, replacement marks or private-use glyphs.
+
+    A text layer whose font has no usable mapping to Unicode comes out as these.
+    """
+    odd = sum(
+        (unicodedata.category(c) in ("Cc", "Co", "Cn") and c not in "\r\n\t") or c == "\ufffd"
+        for c in text
+    )
+    return odd / max(1, len(text))
+
+
+def _sensible_share(text: str) -> float:
+    """Share of tokens that are a word in any script, or a number.
+
+    A word is two or more characters of which at least four in five are letters, the marks
+    that attach to them, or digits, which covers scripts written without spaces, scripts
+    that stack marks on letters, and names such as `x12` or `B2B`. A number is digits with
+    the separators numbers are written with. What is left is noise: symbols, letters mapped
+    to the wrong glyphs. Counting only alphabetic words called pages of figures, and whole
+    scripts, not text.
+
+    A token that is only punctuation is not counted either way. The dots that lead to a page
+    number in a table of contents are not noise, and counting them sent tables of contents
+    to a vision model.
+    """
+
+    def sensible(token: str) -> bool:
+        if _NUMBER.fullmatch(token):
+            return True
+        written = sum(unicodedata.category(c)[0] in "LMN" for c in token)
+        return len(token) >= 2 and written / len(token) >= 0.8
+
+    tokens = [stripped for token in text.split() if (stripped := token.strip(_EDGE_PUNCTUATION))]
+    return sum(sensible(token) for token in tokens) / max(1, len(tokens))
+
+
+def _not_text(page: Page, settings: RoutingConfig) -> str | None:
+    """Why this page's text layer is not text, or None when it reads as text."""
+    control = _control_share(page.text) * 100
+    if control > settings.max_control_char_pct:
+        return (
+            f"{control:.0f}% of the text layer is control or unmapped characters, "
+            "so its font does not map to text"
+        )
+    sensible = _sensible_share(page.text) * 100
+    if sensible < settings.min_wordlike_pct:
+        return (
+            f"only {sensible:.0f}% of the text layer's tokens are words or numbers, "
+            "so it is not text"
+        )
+    return None
+
+
+def _typeset_over_a_background(page: Page, settings: RoutingConfig) -> bool:
+    """Whether a page that is mostly picture is a page of typeset text with a picture behind it.
+
+    Two things say so: the text is drawn, where an OCR layer over a scan is invisible, and
+    there is more of it than a caption. Annual reports are laid out this way, and their pages
+    were going to a vision model. When the page does not say how its text is drawn, the
+    picture rule stands.
+    """
+    hidden = page.invisible_text_share
+    return hidden is not None and hidden < 0.5 and len(page.text) >= settings.max_caption_chars
 
 
 def _page_route(page: Page, settings: RoutingConfig) -> tuple[str, str]:
@@ -89,12 +187,23 @@ def _page_route(page: Page, settings: RoutingConfig) -> tuple[str, str]:
     )
     image_share = _image_share(page)
     mostly_picture = image_share * 100 >= settings.picture_share_pct
+    text_share = _text_share(page)
+
+    if readable and not settings.vision:
+        return "text", f"a text layer covering {text_share * 100:.0f}% of the page"
 
     if readable:
-        if settings.vision_for_complex_tables and _awkward_table(page):
-            return "vision", "a table with merged or stacked header cells, which plain text loses"
-        text_share = _text_share(page)
-        if mostly_picture and text_share * 100 < settings.min_text_coverage_pct:
+        broken = _not_text(page, settings)
+        if broken is not None:
+            return "vision", broken
+        table = _table_needs_vision(page, settings.vision_for_tables)
+        if table is not None:
+            return "vision", table
+        if (
+            mostly_picture
+            and text_share * 100 < settings.min_text_coverage_pct
+            and not _typeset_over_a_background(page, settings)
+        ):
             return (
                 "vision",
                 f"mostly picture ({image_share * 100:.0f}% of the page) with "
@@ -102,19 +211,28 @@ def _page_route(page: Page, settings: RoutingConfig) -> tuple[str, str]:
             )
         return "text", f"a text layer covering {text_share * 100:.0f}% of the page"
 
+    dpi = page.estimated_dpi() if mostly_picture else None
+    scan = f"a scan at {dpi:.0f} dpi" if dpi is not None else "a scan" if mostly_picture else None
+    if settings.vision:
+        if scan is not None:
+            return "vision", f"{scan} with no text layer"
+        return "vision", "no usable text layer"
+
     if page.ocr_confidence is not None and page.ocr_confidence * 100 < settings.min_ocr_confidence:
         return (
-            "vision",
-            f"OCR read this page with {page.ocr_confidence * 100:.0f}% confidence, "
-            f"below {settings.min_ocr_confidence:g}%",
+            "ocr",
+            f"no usable text layer; OCR read this page with "
+            f"{page.ocr_confidence * 100:.0f}% confidence, below {settings.min_ocr_confidence:g}%, "
+            "and a vision model would read it better",
         )
-
-    dpi = page.estimated_dpi() if mostly_picture else None
     if dpi is not None and dpi < settings.min_ocr_dpi:
-        return "vision", f"a scan at {dpi:.0f} dpi, below the {settings.min_ocr_dpi:g} OCR needs"
-    if mostly_picture:
-        where = f" at {dpi:.0f} dpi" if dpi is not None else ""
-        return "ocr", f"a scan{where} with no text layer"
+        return (
+            "ocr",
+            f"{scan}, below the {settings.min_ocr_dpi:g} OCR needs, "
+            "and a vision model would read it better",
+        )
+    if scan is not None:
+        return "ocr", f"{scan} with no text layer"
     return "ocr", "no usable text layer, so the page has to be recognised"
 
 
