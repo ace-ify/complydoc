@@ -417,3 +417,23 @@ def test_the_small_print_looks_blank_at_the_page_resolution(small_print, config,
     monkeypatch.setattr(visibility, "_SMALL_GLYPH_PX", 0)
     runs, *_ = visibility.pdf_hidden_runs(small_print, config.hidden.visibility)
     assert any("ecor" in run.text for run in runs)
+
+
+def test_small_text_spread_over_a_large_page_is_drawn_in_parts(small_print, config, monkeypatch):
+    from complydoc.hidden import visibility
+
+    monkeypatch.setattr(visibility, "_CLOSER_MAX_PIXELS", 400_000)
+    runs, *_ = visibility.pdf_hidden_runs(small_print, config.hidden.visibility)
+    assert [run.text for run in runs] == ["Small print set in black over a black bar"]
+
+
+def test_a_second_drawing_that_fails_keeps_the_rest_of_the_page(small_print, config, monkeypatch):
+    from complydoc.hidden import visibility
+
+    def fails(*args, **kwargs):
+        raise RuntimeError("could not draw")
+
+    monkeypatch.setattr(visibility, "_drawn_after_all", fails)
+    runs, notes, unchecked, _ = visibility.pdf_hidden_runs(small_print, config.hidden.visibility)
+    assert not unchecked and not notes
+    assert any("black bar" in run.text for run in runs)

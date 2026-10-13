@@ -49,7 +49,9 @@ _SMALL_GLYPH_PX = 4
 _CLOSER_SCALE = 4
 """How many times larger the second drawing is."""
 _CLOSER_MAX_PIXELS = 16_000_000
-"""Size the second drawing may reach; past it the scale is lowered to fit."""
+"""Size one second drawing may reach."""
+_CLOSER_SPLITS = 4
+"""Times the glyphs are halved to keep each drawing under that size at full scale."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -131,7 +133,12 @@ def _page_runs(page: Any, number: int, config: VisibilityConfig) -> list[HiddenR
             return []
         left, bottom, right, top = page.get_cropbox()
         scale = config.render_dpi / 72.0
-        image = np.asarray(page.render(scale=scale, grayscale=True).to_pil().convert("L"))
+        bitmap = page.render(scale=scale, grayscale=True)
+        try:
+            image = np.asarray(bitmap.to_pil().convert("L"))
+        finally:
+            with contextlib.suppress(Exception):
+                bitmap.close()
         height, width = image.shape
         white = int(config.near_white * 255)
         r, g, b, a = (ctypes.c_uint() for _ in range(4))
@@ -201,8 +208,10 @@ def _page_runs(page: Any, number: int, config: VisibilityConfig) -> list[HiddenR
                     confirming=confirming,
                 )
             )
-        for at in _drawn_after_all(page, doubtful, scale, config):
-            glyphs[at] = Glyph(glyphs[at].char)
+        # A second drawing that fails leaves the first verdicts standing.
+        with contextlib.suppress(Exception):
+            for at in _drawn_after_all(page, doubtful, scale, config):
+                glyphs[at] = Glyph(glyphs[at].char)
         return runs_from_chars(glyphs, number, config)
     finally:
         with contextlib.suppress(Exception):
@@ -217,11 +226,13 @@ def _drawn_after_all(
     boxes: dict[int, tuple[float, float, float, float]],
     scale: float,
     config: VisibilityConfig,
+    splits: int = _CLOSER_SPLITS,
 ) -> list[int]:
     """The small glyphs that looked blank and show ink once drawn larger.
 
     Only the part of the page that holds them is drawn again, so a page of
-    thumbnails does not cost a full page at the larger scale.
+    thumbnails does not cost a full page at the larger scale. Glyphs spread over
+    more of a large page than one drawing may cover are drawn in halves.
     """
     if not boxes:
         return []
@@ -232,9 +243,20 @@ def _drawn_after_all(
     y1 = min(top, max(box[3] for box in boxes.values()) + 1)
     if x1 <= x0 or y1 <= y0:
         return []
-    closer = scale * _CLOSER_SCALE
-    area = (x1 - x0) * (y1 - y0)
-    closer = min(closer, (_CLOSER_MAX_PIXELS / area) ** 0.5)
+    wanted = scale * _CLOSER_SCALE
+    closer = min(wanted, (_CLOSER_MAX_PIXELS / ((x1 - x0) * (y1 - y0))) ** 0.5)
+    if closer < wanted and splits > 0 and len(boxes) > 1:
+        axis = 0 if x1 - x0 >= y1 - y0 else 1
+        middle = (x0 + x1) / 2 if axis == 0 else (y0 + y1) / 2
+        halves: tuple[dict[int, Any], dict[int, Any]] = ({}, {})
+        for at, box in boxes.items():
+            halves[(box[axis] + box[axis + 2]) / 2 >= middle][at] = box
+        if halves[0] and halves[1]:
+            return [
+                at
+                for half in halves
+                for at in _drawn_after_all(page, half, scale, config, splits - 1)
+            ]
     if closer <= scale:
         return []
 
