@@ -23,10 +23,14 @@ passages it kept, nearly kept and lost. A lost passage is shown with the nearest
 thing that reader did return, which is usually the reason it went missing.
 
 A passage that holds a masked value cannot be expected from the viewer, since the
-run kept dots where the document has digits. For the same reason an audit, which
-keeps masked text, counts a passage holding an identifier as lost, while
-`compare-loaders` checks each loader's own text and finds it. Expect passages
-without identifiers in them where you can.
+run kept dots where the document has digits. Type it on the Evals page or in the
+file as the document writes it.
+
+An audit keeps masked text, and a passage is still found in it where the mask
+covers part of it: an identifier inside a clause, or a word a name model took
+for a name. The page has to show at least half of the passage, so one that is
+mostly an identifier counts as lost in an audit. `compare-loaders` checks each
+loader's own text and finds it.
 
 ## The file
 
