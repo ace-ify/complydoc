@@ -88,16 +88,28 @@ def table(*, intact: int | None, compared: int | None, found_by: str = "lines") 
 BROKEN_ROWS = RoutingConfig(vision_for_tables="broken")
 
 
-def test_a_table_with_merged_cells_goes_to_a_vision_model():
+MERGED_HEADERS = RoutingConfig(vision_for_tables="complex")
+
+
+def test_tables_are_read_as_text_unless_a_rule_is_chosen():
+    """The default spends nothing on tables: no rule was found that picks the ones worth it."""
     merged = TableInfo(rows=4, cols=3, header_depth=1, merged_cells=2)
-    route, reason = route_of(page(text=PROSE, text_share=0.6, tables=[merged]))
-    assert route == "vision"
-    assert "merged or stacked header cells" in reason
+    assert RoutingConfig().vision_for_tables == "none"
+    assert route_of(page(text=PROSE, text_share=0.6, tables=[merged]))[0] == "text"
 
 
-def test_stacked_headers_go_to_a_vision_model_too():
+def test_a_table_with_merged_cells_can_go_to_a_vision_model():
+    merged = TableInfo(rows=4, cols=3, header_depth=1, merged_cells=2)
+    built = page(text=PROSE, text_share=0.6, tables=[merged])
+    [decided] = plan_routes(document(built), MERGED_HEADERS).pages
+    assert decided.route == "vision"
+    assert "merged or stacked header cells" in decided.reason
+
+
+def test_stacked_headers_can_go_to_a_vision_model_too():
     stacked = TableInfo(rows=6, cols=4, header_depth=2, merged_cells=0)
-    assert route_of(page(text=PROSE, text_share=0.5, tables=[stacked]))[0] == "vision"
+    built = page(text=PROSE, text_share=0.5, tables=[stacked])
+    assert plan_routes(document(built), MERGED_HEADERS).pages[0].route == "vision"
 
 
 def test_a_plain_table_stays_on_the_text_layer():

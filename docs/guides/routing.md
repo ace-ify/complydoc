@@ -68,22 +68,26 @@ routing:
   max_caption_chars: 500
   max_control_char_pct: 2
   min_wordlike_pct: 50
-  vision_for_tables: complex
+  vision_for_tables: none
 ```
 
 `vision_for_tables` decides which pages go to a vision model for their tables:
 
 | Value | Pages sent |
 | --- | --- |
+| `none` | None; tables are read as text. The default |
 | `complex` | A ruled table with merged or stacked header cells |
 | `broken` | A ruled table whose rows do not survive in the text layer |
 | `all` | Every ruled table, for when the table's structure matters: plain text cannot carry it |
-| `none` | None; tables are read as text |
 
-The more table pages go to a vision model, the more of the tables is kept. `complex` and
-`broken` send a similar number of pages and could not be told apart on held-out benchmark
-pages. On a sample of PDFs from the open web, each sends about one text-layer page in seven
-and `all` about one in three.
+A vision model keeps the structure of a table, and the more table pages go to one the more
+of the tables is kept. What the measurements did not find is a rule that picks the pages worth
+paying for. `complex` and `broken` send a similar number of pages and could not be told apart
+on held-out benchmark pages, and on 150 questions about company filings, sending tables with
+merged headers to a vision model answered no more questions than the text layer. So the
+default sends none. Choose `all` when what comes next needs rows and columns, not sentences.
+On a sample of PDFs from the open web, `complex` and `broken` each send about one text-layer
+page in seven and `all` about one in three.
 
 ## The manifest
 

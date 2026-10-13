@@ -7,6 +7,16 @@ separately.
 
 ## [Unreleased]
 
+### Changed
+
+- `routing.vision_for_tables` defaults to `none`: tables are read as text unless a rule is
+  chosen. It was `complex`, which sent a page to a vision model for a ruled table with merged
+  or stacked header cells. That rule did not pick the table pages where a vision model helps
+  most, and on 150 questions about company filings it sent 42% of the pages to a vision model
+  and answered no more questions than the text layer. A routing plan now sends fewer pages to
+  vision. Set `vision_for_tables: complex` to keep the earlier plan, or `all` when the
+  structure of tables matters.
+
 ### Fixed
 
 - A page of typeset text with a picture behind it is read from its text layer. Designed
