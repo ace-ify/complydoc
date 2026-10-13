@@ -113,3 +113,13 @@ def test_merged_rows_that_the_text_split_are_still_broken():
 def test_a_cell_that_wraps_beside_single_line_cells_is_one_row():
     grid = [["Supplier\nname", "Rating"], ["Acme", "B"]]
     assert compare_rows(grid, "Supplier name Rating\nAcme B") == (2, 2)
+
+
+def test_a_dash_for_an_empty_value_does_not_stop_merged_rows_being_split():
+    merged = [["Acme\nBolt", "-\n0.56", "0.72\n0.78"]]
+    assert compare_rows(merged, "Acme - 0.72\nBolt 0.56 0.78") == (2, 2)
+
+
+def test_a_row_whose_cells_all_wrap_is_compared_line_by_line():
+    grid = [["Supplier\nname", "Credit\nrating"]]
+    assert compare_rows(grid, "Supplier Credit\nname rating") == (2, 2)

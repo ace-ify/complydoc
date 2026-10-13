@@ -95,8 +95,10 @@ def _rows_in(row: Sequence[str | None]) -> list[list[list[str]]]:
     filled = [str(cell) for cell in row if cell and str(cell).strip()]
     stacked = [[line for line in cell.splitlines() if line.strip()] for cell in filled]
     depth = len(stacked[0]) if stacked else 0
+    # A row whose cells all wrap to the same number of lines looks the same, and is
+    # split too, on purpose: the page's text sets such a row one line at a time.
     if len(stacked) >= 2 and depth >= 2 and all(len(cell) == depth for cell in stacked):
         split = [[_tokens(cell[i]) for cell in stacked] for i in range(depth)]
-        if all(all(cells) for cells in split):
-            return split
+        # A line that is only a dash is an empty value, as an empty cell is.
+        return [[tokens for tokens in cells if tokens] for cells in split]
     return [[tokens for tokens in map(_tokens, filled) if tokens]]
