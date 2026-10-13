@@ -2,12 +2,14 @@ import findDarkPoster from "@/assets/recordings/find-dark.webp";
 import findDark from "@/assets/recordings/find-dark.mp4";
 import findLightPoster from "@/assets/recordings/find-light.webp";
 import findLight from "@/assets/recordings/find-light.mp4";
+import diffDarkPoster from "@/assets/recordings/diff-dark.webp";
+import diffDark from "@/assets/recordings/diff-dark.mp4";
+import diffLightPoster from "@/assets/recordings/diff-light.webp";
+import diffLight from "@/assets/recordings/diff-light.mp4";
 import expectDarkPoster from "@/assets/recordings/expect-dark.webp";
 import expectDark from "@/assets/recordings/expect-dark.mp4";
 import expectLightPoster from "@/assets/recordings/expect-light.webp";
 import expectLight from "@/assets/recordings/expect-light.mp4";
-import diffDark from "@/assets/screens/diff-dark.webp";
-import diffLight from "@/assets/screens/diff-light.webp";
 import documentDark from "@/assets/screens/document-dark.webp";
 import documentLight from "@/assets/screens/document-light.webp";
 import securityDark from "@/assets/screens/security-dark.webp";
@@ -55,23 +57,24 @@ export function Features() {
         <FeatureRow
           flip
           label="Compare"
-          title="Two readers, the same page, line by line."
+          title="Two loaders, the same page, line by line."
           points={[
-            "Side by side or unified",
-            "What one loader keeps that another drops",
+            "Any two loaders or readers, side by side or unified",
+            "What one keeps that another drops or splices",
             "A loader named for each file type",
           ]}
           more={{ label: "Comparing loaders", href: links.compareLoaders }}
           visual={
-            <Screenshot
-              src={{ dark: diffDark, light: diffLight }}
-              ratio={1856 / 1264}
-              alt="The viewer's diff of two readers on an employee handbook: one line of a contact table differs, and the word the second reader moved is marked"
+            <Recording
+              video={{ light: diffLight, dark: diffDark }}
+              poster={{ light: diffLightPoster, dark: diffDarkPoster }}
+              label="A recording of the viewer: the diff of two loaders on a two-column page of a services agreement. One reads each clause whole; the other reads straight across both columns and splices two clauses into one sentence"
             />
           }
         >
-          Loaders get chosen without checking what they extract. Run several on your own documents and read the
-          difference, instead of trusting a benchmark made of someone else's.
+          Loaders get chosen without checking what they extract. On a two-column page, one of these two reads each
+          clause whole and the other reads straight across both columns. Run several on your own documents and read
+          the difference.
         </FeatureRow>
 
         <FeatureRow

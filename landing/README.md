@@ -17,7 +17,7 @@ npm run build    # static files in dist/
 
 | Section | Says |
 | --- | --- |
-| Hero | What complydoc is in a sentence, the install command, the command for a coding agent, and a recording of a trace being opened |
+| Hero | What complydoc is in a sentence, the install command, the command for a coding agent, and a trace |
 | What to know first | Runs on your machine, network blocked, no account, MIT, and the loaders it works with |
 | Quickstart | Install, wrap a pipeline in `cd.observe`, open the viewer |
 | Features | One row a feature, text beside the thing itself: read, compare, expect, follow, protect, route |
@@ -32,8 +32,8 @@ Nothing on the page is invented.
 
 | On the page | From |
 | --- | --- |
-| The recordings in `src/assets/recordings` | The viewer with its sidebar folded, driven with a real mouse by `scripts/recordings/scenes.mjs` (the trace and Find a value) and `expect.mjs` (the evals), and rendered by `scripts/recordings/render.py`, all on the bundled sample documents, observed twice with and without masking. Recordings are kept for what has to be seen happening; each plays once it is on screen and stays a still picture for a reader who asked for less motion |
-| The screenshots in `src/assets/screens` | One whole panel of the viewer each, from those `scripts/recordings/shots.mjs` captures: the reading of `employee-record.pdf`, and the diff and the Security panels from `viewer/sample/documents` read with complydoc's reader and pypdf |
+| The recordings in `src/assets/recordings` | The viewer with its sidebar folded, driven with a real mouse and rendered by `scripts/recordings/render.py`. `scenes.mjs` records Find a value, on the bundled sample documents observed twice with and without masking, and the diff, on `viewer/sample/documents/master-services-agreement.pdf` loaded with LangChain's `PyPDFLoader` and `PDFPlumberLoader` through `cd.compare_loaders`; `expect.mjs` records the evals. Recordings are kept for what has to be seen happening; each plays once it is on screen and stays a still picture for a reader who asked for less motion |
+| The screenshots in `src/assets/screens` | From `scripts/recordings/shots.mjs`: the trace as a whole window, and one whole panel each for the reading of `employee-record.pdf` and for the Security page of `viewer/sample/documents` |
 | The page router and `src/data/routing.ts` | `complydoc routing ./documents` on `viewer/sample/documents`, the `complydoc-routing.json` it writes |
 | 98% of reported identifiers real | The changelog, 0.7.3: measured on 4,200 pages |
 | 53 of 53, 91.4% precision | `complydoc benchmark` |

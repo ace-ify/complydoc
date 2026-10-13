@@ -4,7 +4,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { open, sleep } from "./cdp.mjs";
 export { sleep };
 
-const W = 1440, H = 900, RATIO = 1200 / 750, MIN = 640;
+const RATIO = 1200 / 750, MIN = 640;
 const ease = (t) => (t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2);
 const CURSOR = `(() => { if (document.getElementById("__cursor")) return; const c = document.createElement("div"); c.id = "__cursor"; c.style.cssText = "position:fixed;left:0;top:0;z-index:2147483647;pointer-events:none;width:22px;height:22px;transform:translate(-100px,-100px)";
   c.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24"><path d="M5 3l14 8.5-6.2 1.3 3.6 6.6-2.6 1.4-3.6-6.7L5.6 19z" fill="#111" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/></svg>';
@@ -12,10 +12,12 @@ const CURSOR = `(() => { if (document.getElementById("__cursor")) return; const 
 // The smallest element holding the text, then up to the closest match of a selector.
 const FIND = `window.__el = (text, closest) => { let best = null; for (const el of document.querySelectorAll("body *")) { if (el.id === "__cursor" || el.closest("#__cursor")) continue; const t = (el.innerText || "").trim(); if (t.includes(text) && el.getClientRects().length && (!best || t.length <= (best.innerText || "").trim().length)) best = el; } if (best && closest) best = best.closest(closest) || best; return best; }`;
 
-export function camera(rect, pad = 30) {
+/** A 16:10 box around `rect`, inside a window `W` wide. */
+function frame(W, rect, pad, min = MIN) {
+  const H = W / RATIO;
   if (!rect) return [0, 0, W];
   const [x, y, w, h] = rect; const ww = w + 2 * pad, hh = h + 2 * pad;
-  const width = Math.min(W, Math.max(MIN, ww, hh * RATIO)), height = width / RATIO;
+  const width = Math.min(W, Math.max(min, ww, hh * RATIO)), height = width / RATIO;
   const cx = x - pad + ww / 2, cy = y - pad + hh / 2;
   return [Math.min(Math.max(cx - width / 2, 0), W - width), Math.min(Math.max(cy - height / 2, 0), H - height), width];
 }
@@ -26,15 +28,17 @@ const mix = (a, z, t) => {
   return [cx - width / 2, cy - width / RATIO / 2, width];
 };
 
-export async function film(bases, out, theme) {
+export async function film(bases, out, theme, W = 1440) {
   mkdirSync(out, { recursive: true });
+  const H = Math.round(W / RATIO);
+  const camera = (rect, pad = 30, min = MIN) => frame(W, rect, pad, min);
   const b = await open(W, H, 2);
   for (const base of bases) { await b.goto(base, 1200); await b.evaluate(`localStorage.setItem("complydoc.sidebar", "closed")`); }
-  const frames = []; let n = 0, last = null, at = camera(null), mouse = [1000, 560], fade = false;
+  const frames = []; let n = 0, last = null, at = camera(null), mouse = [W * 0.7, H * 0.62], fade = false;
   const prepare = async () => { await b.evaluate(FIND); await b.evaluate(CURSOR); await b.evaluate(`__cursor(${mouse[0]}, ${mouse[1]})`); };
   const snap = async (cam = at) => { const file = `f${String(n++).padStart(4, "0")}.png`; await b.shot(`${out}/${file}`); last = file; at = cam; frames.push(fade ? { file, cam, fade: true } : { file, cam }); fade = false; };
   const f = {
-    b, theme, full: camera(null),
+    b, theme, camera, full: camera(null),
     /** Open a page; the next frame fades in from the last one. */
     goto: async (url, wait = 3500) => { await b.goto("about:blank", 150); await b.goto(url, wait); await prepare(); fade = frames.length > 0; },
     prepare,
