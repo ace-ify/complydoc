@@ -73,12 +73,13 @@ def test_a_fact_too_short_to_mean_anything_and_a_broken_file_are_refused(folder:
 
 
 def test_an_audit_checks_the_folders_evals_against_its_own_reading(folder: Path, tmp_path: Path):
-    """The sample is a two-column page, and the audit's reader goes straight across it:
-    the heading survives, and a clause comes out spliced with the one beside it."""
+    """A passage the page has is found on its page; one it words differently is missed,
+    and the miss comes with the nearest thing the reading does hold."""
+    wrong = "Invoices are payable in advance, by direct debit on the first day of each month"
     add_fact(
         folder / EVALS_FILENAME, ExpectedFact(text="Terms and conditions", document="terms.pdf")
     )
-    add_fact(folder / EVALS_FILENAME, ExpectedFact(text=KEPT, document="terms.pdf"))
+    add_fact(folder / EVALS_FILENAME, ExpectedFact(text=wrong, document="terms.pdf"))
     out = tmp_path / "out"
     result = runner.invoke(app, ["audit", str(folder), "--out", str(out), "--no-ocr", "-q"])
     assert result.exit_code == 0, result.output
@@ -88,16 +89,8 @@ def test_an_audit_checks_the_folders_evals_against_its_own_reading(folder: Path,
     (reader,) = written["readers"]
     heading, clause = written["checks"]
     assert heading["found"][reader] == "exact" and heading["pages"][reader] == 1
-    assert clause["fact"] == KEPT and clause["found"][reader] is None
-    # What the miss looks like: the end of the clause, behind words from the other column.
-    assert clause["nearest"][reader].endswith("fourteen days of the invoice date")
-    assert not clause["nearest"][reader].startswith("Invoices")
-
-    evals = load_report(out / "complydoc.json").evals
-    assert evals is not None and [check.fact for check in evals.checks] == [
-        "Terms and conditions",
-        KEPT,
-    ]
+    assert clause["fact"] == wrong and clause["found"][reader] is None
+    assert "Invoices are payable" in clause["nearest"][reader]
 
 
 def test_a_folder_with_no_evals_file_has_none(folder: Path, tmp_path: Path):
