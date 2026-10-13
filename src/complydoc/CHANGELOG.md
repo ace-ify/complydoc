@@ -5,7 +5,14 @@ way of using complydoc, such as a command, or for a breaking change to the repor
 a config key, which the release then says. `schema_version` in the JSON is versioned
 separately.
 
-## Unreleased
+## [0.7.4] — 2026-10-14
+
+Evals on your own documents, and a way to ask where a value went. Mark the passages a
+reading must keep by selecting them in the viewer, and every reader and loader is scored
+on them; give an identifier, and get every document, pipeline step and host it reached.
+Two reports from a reader running complydoc on research papers are fixed
+([#5](https://github.com/complydoc/complydoc/issues/5),
+[#6](https://github.com/complydoc/complydoc/issues/6)).
 
 ### Added
 
