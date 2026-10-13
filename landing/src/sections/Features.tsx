@@ -36,6 +36,7 @@ export function Features() {
         </FeatureRow>
         <FeatureRow
           title="One place where the whole team reads the same runs."
+          flip
           more={{ label: "Run it for your team", href: links.team }}
           visual={<TeamDiagram />}
         >
