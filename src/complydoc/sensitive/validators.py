@@ -296,47 +296,54 @@ def de_steuer_id(value: str) -> bool:
     return check == int(digits[10])
 
 
+_EU_VAT_BODIES = {
+    "AT": r"U\d{8}",
+    "BE": r"[01]\d{9}",
+    "BG": r"\d{9,10}",
+    "CY": r"\d{8}[A-Z]",
+    "CZ": r"\d{8,10}",
+    "DE": r"\d{9}",
+    "DK": r"\d{8}",
+    "EE": r"\d{9}",
+    "EL": r"\d{9}",
+    "ES": r"[A-Z0-9]\d{7}[A-Z0-9]",
+    "FI": r"\d{8}",
+    "FR": r"[A-HJ-NP-Z0-9]{2}\d{9}",
+    "HR": r"\d{11}",
+    "HU": r"\d{8}",
+    "IE": r"\d{7}[A-Z]{1,2}|\d[A-Z+*]\d{5}[A-Z]",
+    "IT": r"\d{11}",
+    "LT": r"\d{9}|\d{12}",
+    "LU": r"\d{8}",
+    "LV": r"\d{11}",
+    "MT": r"\d{8}",
+    "NL": r"\d{9}B\d{2}",
+    "PL": r"\d{10}",
+    "PT": r"\d{9}",
+    "RO": r"\d{2,10}",
+    "SE": r"\d{12}",
+    "SI": r"\d{8}",
+    "SK": r"\d{10}",
+}
+"""What follows the country code in each member state's VAT number, as VIES lists them."""
+
+
 def eu_vat(value: str) -> bool:
-    """Any EU or UK VAT number by country prefix and length."""
-    cleaned = "".join(value.split()).upper().replace("-", "")
-    if len(cleaned) < 4 or not cleaned[:2].isalpha():
+    """Any EU or UK VAT number, by its country's own shape.
+
+    The country code has to be written in capitals, as a VAT number is: patterns match without
+    regard to case, and a word that starts with two letters of a country code is not one. A
+    reader of research papers found `benchmark163` reported as a Belgian number, when length
+    was all that was checked.
+    """
+    written = "".join(value.split()).replace("-", "")
+    if len(written) < 4 or not written[:2].isalpha() or not written[:2].isupper():
         return False
-    country, body = cleaned[:2], cleaned[2:]
-    lengths = {
-        "AT": (9,),
-        "BE": (10,),
-        "BG": (9, 10),
-        "CY": (9,),
-        "CZ": (8, 9, 10),
-        "DE": (9,),
-        "DK": (8,),
-        "EE": (9,),
-        "EL": (9,),
-        "ES": (9,),
-        "FI": (8,),
-        "FR": (11,),
-        "GB": (9, 12),
-        "HR": (11,),
-        "HU": (8,),
-        "IE": (8, 9),
-        "IT": (11,),
-        "LT": (9, 12),
-        "LU": (8,),
-        "LV": (11,),
-        "MT": (8,),
-        "NL": (12,),
-        "PL": (10,),
-        "PT": (9,),
-        "RO": tuple(range(2, 11)),
-        "SE": (12,),
-        "SI": (8,),
-        "SK": (10,),
-    }
-    if country not in lengths or len(body) not in lengths[country]:
-        return False
+    country, body = written[:2], written[2:].upper()
     if country == "GB":
-        return vat_mod97(body)
-    return any(c.isdigit() for c in body)
+        return len(body) in (9, 12) and vat_mod97(body)
+    shape = _EU_VAT_BODIES.get(country)
+    return shape is not None and re.fullmatch(shape, body) is not None
 
 
 def _plausible_date(day: int, month: int) -> bool:

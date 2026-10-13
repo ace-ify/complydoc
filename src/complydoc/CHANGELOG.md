@@ -5,6 +5,15 @@ way of using complydoc, such as a command, or for a breaking change to the repor
 a config key, which the release then says. `schema_version` in the JSON is versioned
 separately.
 
+## [Unreleased]
+
+### Fixed
+
+- A word is no longer reported as an EU VAT number because it starts with the two letters of a
+  country code and is the right length: `benchmark163` came out as a Belgian number, with full
+  confidence. A VAT number now has to match its country's own format, and its country code has
+  to be written in capitals. Reported by a reader running complydoc on research papers.
+
 ## [0.7.2] — 2026-10-13
 
 Found by running 0.7.1 on four company annual reports: pages of typeset text over a background

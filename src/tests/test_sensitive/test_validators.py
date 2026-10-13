@@ -138,6 +138,17 @@ def test_national_identifier_checksums(checker, good, bad):
         ("NL123456789B01", True),
         ("XX123", False),
         ("FR1234567890", False),
+        ("FRXX123456789", True),
+        ("ATU12345678", True),
+        ("AT123456789", False),
+        ("ESX1234567X", True),
+        ("IE1234567WA", True),
+        ("BE0123456789", True),
+        # A word that happens to start with a country code, as research papers are full of.
+        ("benchmark163", False),
+        ("BENCHMARK163", False),
+        ("detection2024", False),
+        ("de123456789", False),
     ],
 )
 def test_eu_vat_country_rules(value, expected):
