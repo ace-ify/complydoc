@@ -14,6 +14,15 @@ separately.
   whose cells each hold every row's value, a line apiece, and that never matched a line of the
   page. Each of those lines is now compared as the row it is
   ([#6](https://github.com/complydoc/complydoc/issues/6)).
+- Very small text that is drawn is no longer reported as hidden. A glyph a pixel or two tall
+  leaves too little ink at the resolution the page is checked at, so parts of the page
+  thumbnails in a paper's figure came out as text "a reader does not see". Small glyphs that
+  look blank are now drawn again four times larger before they are called hidden; small text
+  with nothing drawn under it is reported as before
+  ([#5](https://github.com/complydoc/complydoc/issues/5)).
+- Text scaled down from an ordinary font size counts as below the minimum font size. The rule
+  read the font's own size, which a file can set at 12pt and then shrink to nothing; it now
+  also looks at the size the letters are drawn at.
 
 ## [0.7.3] — 2026-10-13
 
