@@ -184,8 +184,8 @@ export function ReportView({
           open: (id) => onSelect({ collection: selection.collection, run: id }),
         }}
       >
-        {/* Above the sidebar too: it lists Evals once the folder expects something. */}
-        <EvalsProvider {...(run.source ? { source: run.source } : {})}>
+        {/* Above the sidebar too: it lists Evals once the folder expects something. Keyed by run, so one run's scores are never shown for another. */}
+        <EvalsProvider key={run.id} {...(run.source ? { source: run.source } : {})}>
           <SidebarProvider {...sidebar}>
             <AppSidebar
               report={report}

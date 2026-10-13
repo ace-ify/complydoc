@@ -192,6 +192,15 @@ def test_calls_one_after_another_of_one_component_are_one_step(tmp_path: Path):
     assert run.reached == 1
 
 
+def test_a_report_that_cannot_be_read_does_not_hide_the_others(reports: Path):
+    """One report from a much older version, or not a report at all, is passed over."""
+    (reports / "old.json").write_text(json.dumps({"run": "a report from long ago"}))
+    (reports / "list.json").write_text("[1, 2, 3]")
+    (reports / "broken.json").write_text("{not json")
+    trail = find_value(IBAN, reports)
+    assert trail.runs
+
+
 def test_a_value_no_run_found_is_not_found_and_nothing_is_written(reports: Path):
     before = sorted(p.name for p in reports.rglob("*"))
     trail = find_value("DE89 3704 0044 0532 0130 00", reports)

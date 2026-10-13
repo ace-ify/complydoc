@@ -10,7 +10,7 @@ const GUIDES: Partial<Record<Page, string>> = {
   cost: "guides/audit-a-folder/",
   documents: "guides/viewer/",
   chunks: "guides/inspect-chunks/",
-  evals: "guides/compare-loaders/",
+  evals: "guides/evals/",
   settings: "guides/ignore-findings/",
 };
 

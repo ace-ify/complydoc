@@ -498,7 +498,7 @@ class _Handler(BaseHTTPRequestHandler):
             return
         kind, file = found
         try:
-            length = min(int(self.headers.get("Content-Length") or 0), 64_000)
+            length = max(0, min(int(self.headers.get("Content-Length") or 0), 64_000))
             body = json.loads(self.rfile.read(length) or b"{}")
             if not isinstance(body, dict):
                 raise ValueError("expected an object")
@@ -577,7 +577,7 @@ class _Handler(BaseHTTPRequestHandler):
             self._error(HTTPStatus.FORBIDDEN, "only the viewer's own page can ask this")
             return
         try:
-            length = min(int(self.headers.get("Content-Length") or 0), 4_000)
+            length = max(0, min(int(self.headers.get("Content-Length") or 0), 4_000))
             body = json.loads(self.rfile.read(length) or b"{}")
             value = body.get("value") if isinstance(body, dict) else None
             if not isinstance(value, str) or not value.strip():

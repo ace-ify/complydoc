@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { servedReadOnly } from "@/hooks/useLocalReports";
 import { toast } from "@/lib/toast";
 import type { ExpectedFact } from "@/report/evals";
@@ -59,23 +59,31 @@ export function useEvals(source?: string): EvalsState {
   const [running, setRunning] = useState(false);
   const url = source ? `${source}/evals` : null;
 
+  // The newest request wins: an earlier one that answers late is about facts since changed.
+  const asked = useRef(0);
+
   const run = useCallback(async () => {
     if (!url) return false;
+    const mine = ++asked.current;
+    const latest = () => mine === asked.current;
     setRunning(true);
     try {
       const response = await fetch(`${url}/score`);
       if (!response.ok) {
-        setError(await response.text());
+        const said = await response.text();
+        if (latest()) setError(said);
         return false;
       }
-      setScored((await response.json()) as EvalSummary);
+      const scores = (await response.json()) as EvalSummary;
+      if (!latest()) return false;
+      setScored(scores);
       setError(null);
       return true;
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "complydoc ui could not be reached.");
+      if (latest()) setError(reason instanceof Error ? reason.message : "complydoc ui could not be reached.");
       return false;
     } finally {
-      setRunning(false);
+      if (latest()) setRunning(false);
     }
   }, [url]);
 

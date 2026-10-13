@@ -120,6 +120,69 @@ def test_an_audit_says_in_the_terminal_how_the_reader_did(folder: Path, tmp_path
     assert "was not checked" in " ".join(bare.output.split())
 
 
+def test_a_broken_evals_file_does_not_lose_the_run(folder: Path, tmp_path: Path):
+    """The file is read after every document has been: the run is kept and says what is wrong."""
+    (folder / EVALS_FILENAME).write_text("facts: [oops")
+    out = tmp_path / "out"
+    result = runner.invoke(app, ["audit", str(folder), "--out", str(out), "--no-ocr"])
+    assert result.exit_code == 0, result.output
+    assert "could not be read" in " ".join(result.output.split())
+    written = json.loads((out / "complydoc.json").read_text())["evals"]
+    assert written["checks"] == [] and "not valid YAML" in written["error"]
+
+
+def test_an_evals_file_that_expects_nothing_says_so(folder: Path, tmp_path: Path):
+    (folder / EVALS_FILENAME).write_text("schema_version: 1\nfacts: []\n")
+    said = runner.invoke(app, ["audit", str(folder), "--out", str(tmp_path / "a"), "--no-ocr"])
+    said = " ".join(said.output.split())
+    assert "it expects nothing yet" in said and "--extracted-text" not in said
+
+
+def test_a_second_reader_is_never_scored_on_the_first_readers_text(folder: Path):
+    """Where a second reader read nothing of a page, it has no text there to find a fact in."""
+    import dataclasses
+
+    import complydoc as cd
+    from complydoc.evals import _as_read_by
+
+    report = cd.full_audit(folder, compare_extractors=["pypdf"], extracted_text=True, ocr=False)
+    (document,) = report.documents
+    bare = dataclasses.replace(
+        document,
+        extracted_text=[
+            dataclasses.replace(
+                page, readings={k: v for k, v in page.readings.items() if k != "pypdf"}
+            )
+            for page in document.extracted_text
+        ],
+    )
+    assert all(page.text == "" for page in _as_read_by(bare, "pypdf", False).extracted_text)
+    assert all(page.text for page in _as_read_by(bare, report.run.extractor, True).extracted_text)
+
+
+def test_the_viewer_answers_a_request_with_a_negative_length(folder: Path, tmp_path: Path):
+    """A length below zero used to be read as "until the connection closes", which never came."""
+    out = tmp_path / "out"
+    runner.invoke(app, ["audit", str(folder), "--out", str(out), "--no-ocr", "-q"])
+    offline.disarm()
+    dist = tmp_path / "dist"
+    dist.mkdir()
+    (dist / "index.html").write_text("<html><head></head><body></body></html>")
+    viewer = launch_ui(out, port=0, open_browser=False, dist=dist)
+    try:
+        (report,) = viewer.reports()
+        connection = http.client.HTTPConnection("127.0.0.1", viewer.port, timeout=5)
+        connection.putrequest("POST", f"/api/reports/{report.id}/evals")
+        connection.putheader("Content-Type", "application/json")
+        connection.putheader("Origin", f"http://127.0.0.1:{viewer.port}")
+        connection.putheader("Content-Length", "-1")
+        connection.endheaders()
+        assert connection.getresponse().status == 400
+        connection.close()
+    finally:
+        viewer.stop()
+
+
 def test_a_folder_with_no_evals_file_has_none(folder: Path, tmp_path: Path):
     out = tmp_path / "out"
     assert (

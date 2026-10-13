@@ -880,6 +880,8 @@ class EvalSummary:
     """Whose text was checked: each loader compared, or the audit's own reader."""
     checks: list[FactCheck] = field(default_factory=list)
     """One per expected fact, with what each reader found."""
+    error: str | None = None
+    """Why the file could not be read, when it could not. Nothing was checked then."""
 
 
 @dataclass(slots=True)

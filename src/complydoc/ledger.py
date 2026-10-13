@@ -211,11 +211,13 @@ def find_value(value: str, *sources: str | Path, config: Config | None = None) -
     label = masked = None
     matched: set[str] = set()
     for report in reports:
+        # A report this cannot make sense of, such as one from a much older version, is
+        # passed over: one of them must not hide the value in all the others.
         try:
             data = json.loads(report.path.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
+            found = _in_report(data, report.name, wanted) if isinstance(data, dict) else None
+        except (OSError, ValueError, TypeError, KeyError, AttributeError):
             continue
-        found = _in_report(data, report.name, wanted)
         if found is None:
             continue
         sighting, described = found

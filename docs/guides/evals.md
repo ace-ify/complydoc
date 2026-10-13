@@ -23,7 +23,10 @@ passages it kept, nearly kept and lost. A lost passage is shown with the nearest
 thing that reader did return, which is usually the reason it went missing.
 
 A passage that holds a masked value cannot be expected from the viewer, since the
-run kept dots where the document has digits.
+run kept dots where the document has digits. For the same reason an audit, which
+keeps masked text, counts a passage holding an identifier as lost, while
+`compare-loaders` checks each loader's own text and finds it. Expect passages
+without identifiers in them where you can.
 
 ## The file
 
@@ -53,7 +56,10 @@ kept.
 | The viewer's **Run evals** | The text the open run kept, with the file as it is now |
 
 An audit prints a line for each reader, and the report JSON has the detail under
-`evals`:
+`evals`. A file that cannot be read does not stop the run: the line says what is
+wrong with it, and `evals.error` holds the same.
+
+For example:
 
 ```text
 Evals   complydoc: 4 of 5 expected passages kept, 1 lost

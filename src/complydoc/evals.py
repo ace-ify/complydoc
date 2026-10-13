@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import dataclasses
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -168,17 +168,20 @@ def _readers(report: AuditReport) -> list[str]:
     return [report.run.extractor, *others]
 
 
-def _as_read_by(document: DocumentReport, reader: str, only: bool) -> DocumentReport:
-    """`document` with each page's text as `reader` read it, from what the run kept."""
-    pages = [
-        dataclasses.replace(
-            page,
-            text=page.text
-            if only or page.kept == reader or (not page.kept and reader not in page.readings)
-            else page.readings.get(reader, ""),
-        )
-        for page in document.extracted_text
-    ]
+def _as_read_by(document: DocumentReport, reader: str, primary: bool) -> DocumentReport:
+    """`document` with each page's text as `reader` read it, from what the run kept.
+
+    A page holds the text of the reader the run was built from, and beside it what any
+    other reader made of it. Only that first reader falls back to the page's own text: a
+    second reader with no reading of a page read nothing there, and is scored on nothing.
+    """
+
+    def text(page: Any) -> str:
+        if reader in page.readings:
+            return str(page.readings[reader])
+        return page.text if primary or page.kept == reader else ""
+
+    pages = [dataclasses.replace(page, text=text(page)) for page in document.extracted_text]
     return dataclasses.replace(document, extracted_text=pages)
 
 
@@ -207,6 +210,6 @@ def readings_of(report: AuditReport) -> dict[str, list[DocumentReport]]:
     """The documents as each reader the run holds read them, from the text it kept."""
     readers = _readers(report)
     return {
-        reader: [_as_read_by(d, reader, len(readers) == 1) for d in report.documents]
-        for reader in readers
+        reader: [_as_read_by(d, reader, i == 0) for d in report.documents]
+        for i, reader in enumerate(readers)
     }

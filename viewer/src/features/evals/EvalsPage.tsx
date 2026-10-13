@@ -55,6 +55,9 @@ export function EvalsPage({ report }: { report: Report }) {
           </span>
         }
       >
+        {report.evals?.error && !state.scored && (
+          <p className="text-sm text-destructive">The evals file could not be read: {report.evals.error}</p>
+        )}
         {facts.length > 0 ? (
           <FactList
             facts={facts}

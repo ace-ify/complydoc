@@ -137,6 +137,8 @@ export interface EvalSummary {
   /** Whose text was checked: each loader compared, or the audit's own reader. */
   readers: string[];
   checks: EvalCheck[];
+  /** Why the file could not be read, when it could not. Nothing was checked then. */
+  error?: string | null;
 }
 
 export interface RunContext {
