@@ -5,7 +5,7 @@ way of using complydoc, such as a command, or for a breaking change to the repor
 a config key, which the release then says. `schema_version` in the JSON is versioned
 separately.
 
-## [Unreleased]
+## [0.7.3] — 2026-10-13
 
 Identifier detection reported far too much that was not an identifier, on research papers
 above all. On 4,200 pages of papers, annual reports, filings and books, 66% of what it reported
