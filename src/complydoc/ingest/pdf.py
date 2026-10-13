@@ -421,11 +421,20 @@ def _render_pages(path: Path, password: str, indices: list[int], dpi: int) -> di
     try:
         scale = dpi / 72.0
         for index in indices:
+            page = bitmap = None
             try:
-                bitmap = pdf[index].render(scale=scale, grayscale=True)
+                page = pdf[index]
+                bitmap = page.render(scale=scale, grayscale=True)
+                # `convert` copies, so the picture outlives the bitmap it was read from.
                 rendered[index] = bitmap.to_pil().convert("L")
             except Exception:
                 continue
+            finally:
+                # pdfium keeps a page's decoded content and its bitmap until they are
+                # closed. Left open, fifty pages of a designed report held 2 GB, of
+                # which the pictures kept are under a quarter.
+                _close(bitmap)
+                _close(page)
     finally:
         with contextlib.suppress(Exception):
             pdf.close()

@@ -15,7 +15,9 @@ separately.
   mostly picture still goes to a vision model when its text is an OCR layer, which is drawn
   invisibly, or is shorter than `routing.max_caption_chars` (500). On two public parsing
   benchmarks the change costs under a tenth of a point of what is kept.
-- pdfium pages are closed as soon as they are read.
+- Pages rendered for OCR and the skew check are closed as soon as their picture is taken, and
+  pages read through pdfium as soon as they are read. Reading four annual reports peaked at
+  2.2 GB; fifty rendered pages of one of them held 2 GB on their own.
 
 ## [0.7.1] — 2026-10-12
 
