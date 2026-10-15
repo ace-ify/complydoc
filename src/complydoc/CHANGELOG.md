@@ -5,7 +5,10 @@ way of using complydoc, such as a command, or for a breaking change to the repor
 a config key, which the release then says. `schema_version` in the JSON is versioned
 separately.
 
-## Unreleased
+## [0.7.5] — 2026-10-15
+
+`cd.observe` traces more of the pipelines people write: Docling read directly, embedding
+calls made through OpenAI's own SDK, and Unstructured's elements.
 
 ### Added
 
