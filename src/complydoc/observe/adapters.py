@@ -49,19 +49,51 @@ def listed(value: Any) -> list[Any] | None:
 
 
 def _docling_pages(document: Any, source: str | None) -> list[dict[str, Any]]:
-    """A Docling document as LangChain's loaders give a PDF: a document a page, in order."""
+    """A Docling document as LangChain's loaders give a PDF: a document a page, in order.
+
+    Docling exports one page by walking the whole document, so a page at a time costs as
+    much again as the conversion on a long book. The items are walked once instead, each
+    put on the page it came from: its text, or a table as Markdown.
+    """
     origin = getattr(getattr(document, "origin", None), "filename", None)
     name = source or origin or getattr(document, "name", None)
-    pages = sorted(getattr(document, "pages", None) or {})
-    if not pages:
+    numbers = sorted(getattr(document, "pages", None) or {})
+    walk = getattr(document, "iterate_items", None)
+    if not numbers or not callable(walk):
         return [{"page_content": document.export_to_markdown(), "metadata": _named(name)}]
+    texts: dict[int, list[str]] = {number: [] for number in numbers}
+    for entry in walk():
+        item = entry[0] if isinstance(entry, tuple) else entry
+        page = _page_of(item)
+        if page is None:
+            continue
+        text = _text_of(item, document)
+        if text:
+            texts.setdefault(page, []).append(text)
     return [
         {
-            "page_content": document.export_to_markdown(page_no=number),
+            "page_content": "\n\n".join(texts[number]),
             "metadata": {**_named(name), "page_number": number},
         }
-        for number in pages
+        for number in sorted(texts)
     ]
+
+
+def _page_of(item: Any) -> int | None:
+    places = getattr(item, "prov", None) or []
+    number = getattr(places[0], "page_no", None) if places else None
+    return number if isinstance(number, int) else None
+
+
+def _text_of(item: Any, document: Any) -> str:
+    """An item's text; a table's as Markdown, as a whole-document export writes it."""
+    if type(item).__name__ == "TableItem" and hasattr(item, "export_to_markdown"):
+        try:
+            return str(item.export_to_markdown(doc=document)).strip()
+        except TypeError:
+            return str(item.export_to_markdown()).strip()
+    text = getattr(item, "text", None)
+    return text.strip() if isinstance(text, str) else ""
 
 
 def _docling_chunk(text: str, meta: Any) -> dict[str, Any]:

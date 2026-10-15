@@ -346,7 +346,8 @@ def finish(recording: Recording, result: Any) -> None:
         return
     if recording.kind == "embed":
         # A list of vectors from a framework; from a provider's SDK, a response holding them.
-        vectors = getattr(result, "data", result)
+        sdk = type(result).__module__.startswith("openai")
+        vectors = getattr(result, "data", None) if sdk else result
         if isinstance(vectors, list):
             recording.vectors = len(vectors)
             first = vectors[0] if vectors else None

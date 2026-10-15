@@ -52,8 +52,6 @@ _INPUT: Final = {
     "afrom_documents": "documents",
     "from_texts": "texts",
     "afrom_texts": "texts",
-    "convert": "source",
-    "convert_all": "source",
     "chunk": "dl_doc",
     "create": "input",
 }
@@ -449,7 +447,14 @@ def _observed(
             if recording is None:
                 return original(self, *args, **kwargs)
             if method in _LAZY:
-                return _lazily(recording, lambda: original(self, *args, **kwargs))
+                with session.running(recording):
+                    result = original(self, *args, **kwargs)
+                # Most return an iterator, read as the caller takes from it; one that
+                # returns a list has done its work, and the caller gets the list itself.
+                if isinstance(result, list | tuple):
+                    session.finish(recording, result)
+                    return result
+                return _lazily(recording, result)
             with session.running(recording):
                 result = original(self, *args, **kwargs)
             session.finish(recording, result)
@@ -461,11 +466,11 @@ def _observed(
     return wrapped
 
 
-def _lazily(recording: session.Recording, start: Callable[[], Any]) -> Iterator[Any]:
+def _lazily(recording: session.Recording, returned: Any) -> Iterator[Any]:
     """Items as the caller takes them, the stage running only while one is being made."""
     recording.finished, recording.outputs = False, []
     with session.running(recording):
-        iterator = iter(start())
+        iterator = iter(returned)
     while True:
         with session.running(recording):
             item = next(iterator, _DONE)

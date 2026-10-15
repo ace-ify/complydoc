@@ -7,6 +7,7 @@ server on this machine.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import sys
 import threading
@@ -14,7 +15,7 @@ import types
 from collections.abc import Iterator
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 
 import pytest
 
@@ -48,6 +49,23 @@ class _Document:
 
     def export_to_markdown(self, page_no: int | None = None) -> str:
         return "\n\n".join(self._pages) if page_no is None else self._pages[page_no - 1]
+
+    def iterate_items(self) -> Iterator[tuple[_Item, int]]:
+        for number, text in enumerate(self._pages, start=1):
+            yield _Item(text, number), 1
+
+
+class _Place:
+    def __init__(self, page_no: int) -> None:
+        self.page_no = page_no
+
+
+class _Item:
+    """A paragraph of a Docling document, and the page it is on."""
+
+    def __init__(self, text: str, page: int) -> None:
+        self.text = text
+        self.prov = [_Place(page)]
 
 
 class _Input:
@@ -148,9 +166,25 @@ def test_docling_read_directly_is_a_load_and_a_split(docling, tmp_path: Path) ->
 def test_one_conversion_is_a_load_of_its_pages(docling, tmp_path: Path) -> None:  # type: ignore[no-untyped-def]
     with cd.observe("docling", out=None) as observation:
         docling.converter().convert(tmp_path / "contract.pdf")
-    (load,) = observation.report.trace.stages
-    # `convert` is the converter calling itself: one step, not one inside another.
-    assert load.documents_out == 2 and load.characters_out == sum(len(p) for p in PAGES)
+        list(docling.converter().convert_all([tmp_path / "contract.pdf"]))
+    one, many = observation.report.trace.stages
+    # A converter is given files, not documents: as for any loader, nothing comes in.
+    assert one.documents_in == many.documents_in
+    assert one.documents_out == 2 and one.characters_out == sum(len(p) for p in PAGES)
+    assert one.sources == many.sources == ["contract.pdf"]
+
+
+def test_a_chunker_that_returns_a_list_still_returns_a_list(docling) -> None:  # type: ignore[no-untyped-def]
+    class ListChunker(docling.chunker.__mro__[1]):  # type: ignore[misc,name-defined]
+        def chunk(self, dl_doc: _Document) -> list[_Chunk]:  # type: ignore[override]
+            return [_Chunk(dl_doc.export_to_markdown(), _Meta(dl_doc.origin.filename, 1))]
+
+    document = _Document("contract.pdf", PAGES)
+    with cd.observe("docling", out=None) as observation:
+        chunks = ListChunker().chunk(document)
+    assert isinstance(chunks, list) and len(chunks) == 1
+    (split,) = observation.report.trace.stages
+    assert split.documents_out == 1
 
 
 class _Metadata:
@@ -233,3 +267,49 @@ def test_an_embedding_sdk_called_directly_is_an_embedding_step() -> None:
     # Priced from the model the call named, as a framework's settings would name it.
     assert first.usd is not None and first.usd_basis == "estimated"
     assert (second.documents_in, second.vectors) == (1, 1)
+
+
+def test_an_async_embedding_sdk_call_is_an_embedding_step() -> None:
+    openai = pytest.importorskip("openai")
+    server = HTTPServer(("127.0.0.1", 0), _Embeddings)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+
+    async def embed() -> None:
+        client = openai.AsyncOpenAI(
+            api_key="test", base_url=f"http://127.0.0.1:{server.server_port}/v1"
+        )
+        await client.embeddings.create(model="text-embedding-3-small", input=[PAGES[0]])
+
+    try:
+        with cd.observe("sdk", out=None) as observation:
+            asyncio.run(embed())
+    finally:
+        server.shutdown()
+    (step,) = observation.report.trace.stages
+    assert (step.kind, step.component, step.vectors, step.dimensions) == (
+        "embed",
+        "OpenAI embeddings",
+        1,
+        8,
+    )
+    assert step.hosts == ["127.0.0.1"] and [i.label for i in step.identifiers] == ["IBAN"]
+
+
+def test_a_result_that_only_looks_like_a_response_is_not_read_as_one() -> None:
+    """A framework's own result with a `data` field is not an SDK's response."""
+    from complydoc.observe import session
+
+    class Batch(list):  # type: ignore[type-arg]
+        data: ClassVar[list[list[float]]] = [[0.0] * 3]
+
+    recording = session.Recording(
+        index=0,
+        kind="embed",
+        component="x",
+        module="m",
+        method="embed_documents",
+        tags=[],
+        parameters={},
+    )
+    session.finish(recording, Batch([[0.0] * 4, [0.0] * 4]))
+    assert (recording.vectors, recording.dimensions) == (2, 4)
