@@ -5,6 +5,20 @@ way of using complydoc, such as a command, or for a breaking change to the repor
 a config key, which the release then says. `schema_version` in the JSON is versioned
 separately.
 
+## Unreleased
+
+### Added
+
+- `cd.observe` traces Docling read directly: the converter is a load step, one document a
+  page named by its file, and each chunker a split step whose chunks keep their page.
+  Through Docling's LangChain loader, the converter and chunkers now show as steps inside it.
+- An embedding model called through OpenAI's SDK, `client.embeddings.create`, is an
+  embedding step: the texts sent, the vectors back, the host, and the cost of the model the
+  call names.
+- Unstructured's elements are read as documents wherever a step passes them on, so a
+  function marked `@cd.stage` that calls `partition` or `chunk_by_title` is traced with
+  its text, metadata and identifiers.
+
 ## [0.7.4] — 2026-10-14
 
 Evals on your own documents, and a way to ask where a value went. Mark the passages a
