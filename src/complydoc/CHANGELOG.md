@@ -15,6 +15,9 @@ separately.
 
 ### Changed
 
+- complydoc is described as an open-source, offline audit for documents before they are
+  indexed, and a diff of document loaders, on the landing page, the docs, the package and
+  the container image. The tagline stays "Know your documents before they reach an LLM".
 - Model prices refreshed (2026-10-12). Claude Sonnet 5.5, Haiku 5.5 and Fable 5.1 are
   compared with the same vision formula and token-count note as the other Claude models.
 
