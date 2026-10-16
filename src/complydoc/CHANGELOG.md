@@ -9,10 +9,9 @@ separately.
 
 ### Added
 
-- What PDF loaders let through: a page in the docs comparing what pypdf, pdfplumber,
-  pdfium, pymupdf, Docling, Unstructured and OpenDataLoader PDF return from six one-page
-  files, each with one thing a reader does not see, and what the audit flags.
-  `examples/loader-benchmark` writes the files and repeats the readings.
+- A guide to complydoc beside Langfuse or Arize Phoenix: record the ingestion with
+  `cd.observe`, then open the model call's span after the block, carrying the run's name
+  and the report's path. There is no exporter; the report stays on disk.
 
 ### Changed
 
