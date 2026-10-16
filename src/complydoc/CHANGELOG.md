@@ -9,8 +9,15 @@ separately.
 
 ### Added
 
-- Three policy packs for `complydoc check`: `finance`, `legal` and `hr`. They ship in the
-  package, so `--policy finance` and the action input `policy: finance` use them.
+- Erasure: where a value is still in the index. `complydoc find`, the viewer's Find a value
+  page and `cd.find_value` name, for each vector store a recorded pipeline wrote to, the
+  items holding the value under the IDs the store gave them, and the call that removes
+  them: LangChain's `delete(ids=...)` or LlamaIndex's `delete_nodes(node_ids=...)`.
+  A trace keeps the IDs each store returned or was given, including those of a store
+  built with `from_documents`, and looks in each item's metadata as well as its text.
+  An ID that holds a path or an identifier is counted, not kept. The report JSON moves
+  to schema 25: a store step lists its `ids` once, and each identifier the `items` that
+  hold it.
 
 ### Changed
 
