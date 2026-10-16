@@ -9,9 +9,8 @@ separately.
 
 ### Added
 
-- A guide to complydoc beside Langfuse or Arize Phoenix: record the ingestion with
-  `cd.observe`, then open the model call's span after the block, carrying the run's name
-  and the report's path. There is no exporter; the report stays on disk.
+- Three policy packs for `complydoc check`: `finance`, `legal` and `hr`. They ship in the
+  package, so `--policy finance` and the action input `policy: finance` use them.
 
 ### Changed
 
