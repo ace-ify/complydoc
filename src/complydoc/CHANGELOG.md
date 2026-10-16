@@ -5,7 +5,14 @@ way of using complydoc, such as a command, or for a breaking change to the repor
 a config key, which the release then says. `schema_version` in the JSON is versioned
 separately.
 
-## Unreleased
+## [0.7.6] — 2026-10-16
+
+Where a value is still held in a vector store, and the call that removes it. `complydoc
+check` takes a shipped policy, `finance`, `legal` or `hr`, in place of a file. Text set at
+0pt is flagged, and so is an instruction hidden under an opaque image. A docs page shows
+what PDF loaders let through, and a guide puts a Langfuse or Phoenix span beside an
+ingestion trace. complydoc is now described as an offline audit for documents before
+they're indexed.
 
 ### Added
 
