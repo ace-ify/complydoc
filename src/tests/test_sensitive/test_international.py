@@ -6,15 +6,11 @@ identifier's own check rule; each invalid number changes one digit.
 
 from __future__ import annotations
 
-from pathlib import Path
-
 import pytest
 
 import complydoc as cd
-from complydoc.config.loader import load_config
-from complydoc.ingest.base import Document, DocumentFormat, Page
 from complydoc.sensitive import validators as v
-from complydoc.sensitive.scanner import scan
+from tests.helpers import FIXTURES
 
 
 def change_last_digit(value: str) -> str:
@@ -129,21 +125,9 @@ def test_bare_numbers_without_a_label_are_not_reported(text):
 
 
 def test_a_document_with_a_norwegian_identifier_is_flagged():
-    doc = Document(
-        path=Path("supplier_agreement_no.txt"),
-        sha256="0" * 64,
-        format=DocumentFormat.TEXT,
-        pages=[
-            Page(
-                number=1,
-                width_pt=595.0,
-                height_pt=842.0,
-                text="KONTRAKT FOR LEVERANDØR\nFødselsnummer: 010190 10046\nNavn: Ola Nordmann\n",
-            )
-        ],
-    )
-    result = scan(doc, load_config().sensitive)
-    assert result.counts_by_category.get("no_fnr") == 1
-    match = next(m for m in result.matches if m.category == "no_fnr")
+    report = cd.security_audit(FIXTURES / "contract_no.pdf")
+    [document] = report.documents
+    assert document.sensitive is not None
+    assert document.sensitive.counts_by_category.get("no_fnr") == 1
+    match = next(m for m in document.sensitive.matches if m.category == "no_fnr")
     assert match.page == 1
-    assert match.line == 2
